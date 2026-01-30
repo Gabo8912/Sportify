@@ -48,7 +48,7 @@ class PlayerProfileController extends Controller
 
     public function show($id){
         //find use by id, error 404 if not found
-        $user = \App\Models\User::with('profile')->findOrFail($id);
+        $user = \App\Models\User::with('profile', 'videos')->findOrFail($id);
 
         //public view
         return Inertia::render('Player/Show', [

@@ -1,5 +1,6 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
+import { route } from 'ziggy-js'; // Importamos route para los enlaces
 
 const props = defineProps({
     player: Object
@@ -75,6 +76,12 @@ const getAge = (birthDate) => {
                                     ⚽ {{ player.profile?.position || 'Unknown Position' }}
                                 </p>
                             </div>
+                            
+                            <div v-if="currentUser && currentUser.id === player.id">
+                                <Link :href="route('player.profile.edit')" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold">
+                                    ✏️ Edit Profile
+                                </Link>
+                            </div>
                         </div>
 
                         <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-b border-gray-200 dark:border-gray-700 py-6">
@@ -96,7 +103,51 @@ const getAge = (birthDate) => {
                             </div>
                         </div>
 
-                    </div>
+                        <div class="mt-10">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                    📹 Video Highlights
+                                </h3>
+                                
+                                <Link 
+                                    v-if="currentUser && currentUser.id === player.id" 
+                                    :href="route('videos.create')"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2 px-4 rounded-lg shadow transition"
+                                >
+                                    + Upload Highlight
+                                </Link>
+                            </div>
+
+                            <div v-if="!player.videos || player.videos.length === 0" class="text-center py-12 bg-gray-50 dark:bg-gray-750 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                                <p class="text-gray-500 dark:text-gray-400 mb-2">No highlights uploaded yet.</p>
+                                <p class="text-sm text-gray-400">Upload your best plays to show scouts what you can do.</p>
+                            </div>
+
+                            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div v-for="video in player.videos" :key="video.id" class="bg-black rounded-xl overflow-hidden shadow-lg group">
+                                    <video 
+                                        controls 
+                                        class="w-full aspect-video object-cover"
+                                        preload="metadata"
+                                    >
+                                        <source :src="`/storage/${video.video_url}`" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    
+                                    <div class="p-4 bg-white dark:bg-gray-700">
+                                        <h4 class="font-bold text-gray-900 dark:text-white truncate" :title="video.title">
+                                            {{ video.title }}
+                                        </h4>
+                                        <div class="flex justify-between items-center mt-2">
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                                📅 {{ new Date(video.created_at).toLocaleDateString() }}
+                                            </span>
+                                            </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
                 </div>
 
                 <div class="mt-6 text-center">

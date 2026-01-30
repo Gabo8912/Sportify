@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\PlayerProfileController;
+use App\Http\Controllers\VideoController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -28,6 +29,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
     Route::patch('/player-profile', [PlayerProfileController::class, 'update'])
         ->name('player.profile.update');
+        
+    Route::get('/videos/upload', [VideoController::class, 'create'])->name('videos.create');
+    Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
 });
 
 
