@@ -33,6 +33,8 @@ class PlayerProfileController extends Controller
             'height' => 'nullable|integer|min:100|max:250',
             'weight' => 'nullable|integer|min:30|max:150',
             'current_club' => 'nullable|string|max:100',
+            'birth_date' => ['required', 'date'],
+            'dominant_foot' => 'nullable|string|max:20',
         ]);
 
 
@@ -42,5 +44,15 @@ class PlayerProfileController extends Controller
         );
 
         return Redirect::route('player.profile.edit')->with('success', 'Perfil actualizado correctamente.');
+    }
+
+    public function show($id){
+        //find use by id, error 404 if not found
+        $user = \App\Models\User::with('profile')->findOrFail($id);
+
+        //public view
+        return Inertia::render('Player/Show', [
+            'player' => $user
+        ]);
     }
 }
