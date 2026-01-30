@@ -41,6 +41,28 @@ import { store } from '@/routes/register';
                 </div>
 
                 <div class="grid gap-2">
+                    <Label for="role">I am a...</Label>
+                    <div class="relative">
+                        <select
+                            id="role"
+                            name="role" 
+                            required
+                            :tabindex="1"
+                            class="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <option value="player">⚽ Football Player</option>
+                            <option value="scout">🕵️‍♂️ Scout / Agent</option>
+                            <option value="club">🏢 Club Representative</option>
+                        </select>
+                        
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down h-4 w-4 opacity-50"><path d="m6 9 6 6 6-6"/></svg>
+                        </div>
+                    </div>
+                    <InputError :message="errors.role" />
+                </div>
+
+                <div class="grid gap-2">
                     <Label for="email">Email address</Label>
                     <Input
                         id="email"
@@ -89,7 +111,7 @@ import { store } from '@/routes/register';
                     :disabled="processing"
                     data-test="register-user-button"
                 >
-                    <Spinner v-if="processing" />
+                    <Spinner v-if="processing" class="mr-2" />
                     Create account
                 </Button>
             </div>
@@ -100,8 +122,9 @@ import { store } from '@/routes/register';
                     :href="login()"
                     class="underline underline-offset-4"
                     :tabindex="6"
-                    >Log in</TextLink
                 >
+                    Log in
+                </TextLink>
             </div>
         </Form>
     </AuthBase>

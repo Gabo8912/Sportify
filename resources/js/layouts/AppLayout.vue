@@ -1,18 +1,28 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/app/AppSidebarLayout.vue';
-import type { BreadcrumbItem } from '@/types';
+import AppSidebar from '@/components/AppSidebar.vue';
+import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
-type Props = {
+interface BreadcrumbItem {
+    title: string;
+    href: string;
+}
+
+defineProps<{
     breadcrumbs?: BreadcrumbItem[];
-};
-
-withDefaults(defineProps<Props>(), {
-    breadcrumbs: () => [],
-});
+}>();
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <slot />
-    </AppLayout>
+    <SidebarProvider>
+        <AppSidebar />
+
+        <SidebarInset>
+            <AppSidebarHeader :breadcrumbs="breadcrumbs" />
+
+            <div class="flex-1 p-6">
+                <slot />
+            </div>
+        </SidebarInset>
+    </SidebarProvider>
 </template>

@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('/dashboard', function () {
         $players = \App\Models\User::with('profile')
-            ->whereHas('profile') 
+            ->where('role','player') 
             ->latest()
             ->get();
 

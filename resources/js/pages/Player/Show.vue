@@ -30,7 +30,7 @@ const getAge = (birthDate) => {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
-                        <Link href="/" class="font-bold text-xl text-indigo-600">
+                        <Link href="/dashboard" class="font-bold text-xl text-indigo-600">
                             ⚽ ScoutApp
                         </Link>
                     </div>
@@ -151,7 +151,7 @@ const getAge = (birthDate) => {
                 </div>
 
                 <div class="mt-6 text-center">
-                    <Link href="/" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                    <Link href="/dashboard" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
                         ← Go Home
                     </Link>
                 </div>
