@@ -55,5 +55,25 @@ class User extends Authenticatable
     {
         return $this->hasOne(Profile::class);
     }
+
+    public function videos(){
+        return $this->hasMany(Video::class);
+    }
+
+    //My follows
+    public function following(){
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'followed_id');
+    }
+
+    //My followers
+    public function followers(){
+        return $this->belongsToMany(User::class,'follows','followed_id','follower_id');
+    }
+
+    //Scouts
+    public function savedPlayers(){
+        return $this->hasMany(SavedPlayer::class, 'scout_id');
+    }
+
 }
 
