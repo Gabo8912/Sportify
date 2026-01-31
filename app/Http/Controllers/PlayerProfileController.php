@@ -37,10 +37,10 @@ class PlayerProfileController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'cover_photo' => ['nullable', 'image', 'max:10240'],
-
             'birth_date' => ['required', 'date'], 
-            'current_club' => ['nullable', 'string', 'max:100'], 
-            
+            'current_club' => ['nullable', 'string', 'max:100'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'availability_status' => ['nullable', 'string', Rule::in(['Available', 'Looking for Club', 'Under Contract', 'Injured'])],
             'position' => [$isPlayer ? 'required' : 'nullable', 'string', 'max:50'],
             'height' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:100', 'max:250'],
             'weight' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:30', 'max:150'],
@@ -56,7 +56,8 @@ class PlayerProfileController extends Controller
         $profileData = [
             'birth_date' => $validated['birth_date'],
             'current_club' => $validated['current_club'] ?? '',
-            
+            'location' => $validated['location'] ?? '',
+            'availability_status' => $validated['availability_status'] ?? 'Available',
             'position' => $validated['position'] ?? 'N/A',
             'height' => $validated['height'] ?? 0,
             'weight' => $validated['weight'] ?? 0,

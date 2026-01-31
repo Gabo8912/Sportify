@@ -84,24 +84,29 @@ public function isFollowing($userId)
     return $this->following()->where('followed_id', $userId)->exists();
 }
 
-    public function scopeFilter($query, array $filters)
-    {
-        $query->when($filters['search'] ?? null, function ($query, $search) {
-            $query->where('name', 'like', '%'.$search.'%');
-        });
+public function scopeFilter($query, array $filters)
+{
+    $query->when($filters['search'] ?? null, function ($query, $search) {
+        $query->where('name', 'like', '%'.$search.'%');
+    });
 
-        $query->when($filters['position'] ?? null, function ($query, $position) {
-            $query->whereHas('profile', function ($q) use ($position) {
-                $q->where('position', $position);
-            });
-        });
-
-        $query->when($filters['foot'] ?? null, function ($query, $foot) {
-            $query->whereHas('profile', function ($q) use ($foot) {
-                $q->where('dominant_foot', $foot);
-            });
-        });
-    }
+    $query->whereHas('profile', function ($q) use ($filters) {
+        $q->when($filters['position'] ?? null, fn($q, $p) => $q->where('position', $p));
+        $q->when($filters['foot'] ?? null, fn($q, $f) => $q->where('dominant_foot', $f));
+        $q->when($filters['club'] ?? null, fn($q, $c) => $q->where('current_club', 'like', '%'.$c.'%'));
+        $q->when($filters['location'] ?? null, fn($q, $l) => $q->where('location', 'like', '%'.$l.'%'));
+        $q->when($filters['availability'] ?? null, fn($q, $a) => $q->where('availability_status', $a));
+        
+        if ($filters['age_min'] ?? null) {
+            $date = now()->subYears($filters['age_min'])->endOfYear();
+            $q->where('birth_date', '<=', $date);
+        }
+        if ($filters['age_max'] ?? null) {
+            $date = now()->subYears($filters['age_max'])->startOfYear();
+            $q->where('birth_date', '>=', $date);
+        }
+    });
+}
 
     public function sentMessages() {
         return $this->hasMany(Message::class, 'sender_id');

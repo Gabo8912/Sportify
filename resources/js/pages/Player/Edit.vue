@@ -92,6 +92,8 @@ const form = useForm({
     height: props.profile?.height || '',
     weight: props.profile?.weight || '',
     dominant_foot: props.profile?.dominant_foot || 'Right',
+    location: props.profile?.location || '',
+    availability_status: props.profile?.availability_status || 'Available',
 });
 
 const submitProfile = () => {
@@ -263,6 +265,30 @@ const deleteVideo = (videoId) => {
                                 <InputError :message="form.errors.current_club" />
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        
+                        <div class="grid gap-2">
+                            <Label for="location">📍 Location (City, Country)</Label>
+                            <Input id="location" v-model="form.location" placeholder="e.g. Madrid, Spain" />
+                            <InputError :message="form.errors.location" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="availability_status">📢 Availability Status</Label>
+                            <select 
+                                id="availability_status"
+                                v-model="form.availability_status" 
+                                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm dark:text-white dark:bg-gray-900"
+                            >
+                                <option value="Available">Available</option>
+                                <option value="Looking for Club">Looking for Club</option>
+                                <option value="Under Contract">Under Contract</option>
+                                <option value="Injured">Injured</option>
+                            </select>
+                            <InputError :message="form.errors.availability_status" />
+                        </div>
+                    </div>
 
                         <div v-if="isPlayer" class="space-y-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                             <div class="grid gap-2">

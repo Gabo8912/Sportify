@@ -12,12 +12,22 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const position = ref(props.filters.position || '');
 const foot = ref(props.filters.foot || '');
+const club = ref(props.filters.club || '');
+const location = ref(props.filters.location || '');
+const availability = ref(props.filters.availability || '');
+const ageMin = ref(props.filters.age_min || '');
+const ageMax = ref(props.filters.age_max || '');
 
 const updateSearch = debounce(() => {
     router.get(route('dashboard'), {
         search: search.value,
         position: position.value,
-        foot: foot.value
+        foot: foot.value,
+        club: club.value,
+        location: location.value,
+        availability: availability.value,
+        age_min: ageMin.value,
+        age_max: ageMax.value
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -25,7 +35,7 @@ const updateSearch = debounce(() => {
     });
 }, 300);
 
-watch([search, position, foot], updateSearch);
+watch([search, position, foot, club, location, availability, ageMin, ageMax], updateSearch);
 
 const positions = [
     'Goalkeeper',
@@ -66,23 +76,58 @@ const calculateAge = (dateString) => {
         <div class="py-6">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6 mb-8 border-b border-gray-700">
+                
+                <div class="bg-white dark:bg-gray-800 shadow-xl sm:rounded-lg p-6 mb-8 border border-gray-700">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div class="md:col-span-2">
                             <label class="text-xs text-gray-400 uppercase font-bold">Search Player</label>
-                            <input v-model="search" type="text" placeholder="Name..." class="w-full mt-1 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-green-500">
+                            <input v-model="search" type="text" placeholder="Player name..." class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg focus:ring-green-500">
                         </div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 uppercase font-bold">Current Club</label>
+                            <input v-model="club" type="text" placeholder="Club name..." class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg focus:ring-green-500">
+                        </div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 uppercase font-bold">Location</label>
+                            <input v-model="location" type="text" placeholder="City or Country..." class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg focus:ring-green-500">
+                        </div>
+
                         <div>
                             <label class="text-xs text-gray-400 uppercase font-bold">Position</label>
-                            <select v-model="position" class="w-full mt-1 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-green-500">
+                            <select v-model="position" class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg">
                                 <option value="">All Positions</option>
                                 <option v-for="p in positions" :key="p" :value="p">{{ p }}</option>
                             </select>
                         </div>
+
+                        <div class="flex gap-2">
+                            <div class="w-1/2">
+                                <label class="text-xs text-gray-400 uppercase font-bold">Min Age</label>
+                                <input v-model="ageMin" type="number" class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg">
+                            </div>
+                            <div class="w-1/2">
+                                <label class="text-xs text-gray-400 uppercase font-bold">Max Age</label>
+                                <input v-model="ageMax" type="number" class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg">
+                            </div>
+                        </div>
+
                         <div>
-                            <label class="text-xs text-gray-400 uppercase font-bold">Dominant Foot</label>
-                            <select v-model="foot" class="w-full mt-1 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-green-500">
-                                <option value="">Any</option>
+                            <label class="text-xs text-gray-400 uppercase font-bold">Status</label>
+                            <select v-model="availability" class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg">
+                                <option value="">Any Status</option>
+                                <option value="Available">Available</option>
+                                <option value="Looking for Club">Looking for Club</option>
+                                <option value="Under Contract">Under Contract</option>
+                                <option value="Injured">Injured</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-xs text-gray-400 uppercase font-bold">Foot</label>
+                            <select v-model="foot" class="w-full mt-1 bg-gray-900 border-gray-700 text-white rounded-lg">
+                                <option value="">Any Foot</option>
                                 <option value="Right">Right</option>
                                 <option value="Left">Left</option>
                                 <option value="Both">Both</option>
@@ -90,6 +135,7 @@ const calculateAge = (dateString) => {
                         </div>
                     </div>
                 </div>
+                
 
                 <div v-if="players.data.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     
