@@ -77,5 +77,28 @@ class User extends Authenticatable
         return $this->hasMany(SavedPlayer::class, 'scout_id');
     }
 
+    // Scope for user search
+public function scopeFilter($query, array $filters)
+{
+    //By Name
+    $query->when($filters['search'] ?? null, function ($query, $search) {
+        $query->where('name', 'like', '%'.$search.'%');
+    });
+
+    //By position
+    $query->when($filters['position'] ?? null, function ($query, $position) {
+        $query->whereHas('profile', function ($q) use ($position) {
+            $q->where('position', $position);
+        });
+    });
+
+    //By foot
+    $query->when($filters['foot'] ?? null, function ($query, $foot) {
+        $query->whereHas('profile', function ($q) use ($foot) {
+            $q->where('dominant_foot', $foot);
+        });
+    });
+}
+
 }
 

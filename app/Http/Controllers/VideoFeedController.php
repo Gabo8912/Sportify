@@ -51,4 +51,10 @@ class VideoFeedController extends Controller
 
         return back();
     }
+
+    public function incrementView($id)
+    {
+        Video::where('id', $id)->increment('views_count');
+        return response()->noContent();
+    }
 }

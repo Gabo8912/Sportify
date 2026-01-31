@@ -5,6 +5,8 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\PlayerProfileController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\DashboardController;
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -18,17 +20,11 @@ Route::get('/player/{id}', [PlayerProfileController::class, 'show'])
     
 //ONLY WITH LOGIN
 Route::middleware(['auth', 'verified'])->group(function () {
-    
-    Route::get('/dashboard', function () {
-        $players = \App\Models\User::with('profile')
-            ->where('role','player') 
-            ->latest()
-            ->get();
 
-            return Inertia::render('Dashboard',[
-                'players'=> $players
-            ]);
-        })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+    
 
     Route::get('/player-profile', [PlayerProfileController::class, 'edit'])
         ->name('player.profile.edit');
@@ -36,13 +32,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/player-profile', [PlayerProfileController::class, 'update'])
         ->name('player.profile.update');
 
+    Route::put('/player-profile/password', [PlayerProfileController::class, 'updatePassword'])->name('player.password.update');
+
+
     Route::get('/videos/upload', [VideoController::class, 'create'])->name('videos.create');
     Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
+    Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
     Route::get('/feed', [App\Http\Controllers\VideoFeedController::class, 'index'])->name('feed');   
-    Route::post('/videos/{id}/like', [App\Http\Controllers\VideoFeedController::class, 'toggleLike'])->name('videos.like'); 
+    Route::post('/videos/{id}/like', [App\Http\Controllers\VideoFeedController::class, 'toggleLike'])->name('videos.like');
+    Route::post('/videos/{id}/view', [App\Http\Controllers\VideoFeedController::class, 'incrementView'])->name('videos.view'); 
+    Route::get('/player/{id}', [App\Http\Controllers\PlayerProfileController::class, 'show'])->name('player.show');
 });
-
-
 
 
 require __DIR__.'/settings.php';

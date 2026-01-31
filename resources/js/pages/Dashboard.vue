@@ -1,108 +1,158 @@
 <script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import debounce from 'lodash/debounce';
 
-// Recibimos la lista de jugadores desde el backend (Laravel)
-defineProps({
-    players: {
-        type: Array,
-        default: () => [],
-    }
+const props = defineProps({
+    players: Object,
+    filters: Object,
 });
 
-// Configuración para que el Header sepa dónde estamos
-const breadcrumbs = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Player Market', href: '#' },
+const search = ref(props.filters.search || '');
+const position = ref(props.filters.position || '');
+const foot = ref(props.filters.foot || '');
+
+const updateSearch = debounce(() => {
+    router.get(route('dashboard'), {
+        search: search.value,
+        position: position.value,
+        foot: foot.value
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+}, 300);
+
+watch([search, position, foot], updateSearch);
+
+const positions = [
+    'Goalkeeper',
+    'Center Back',
+    'Right Back',
+    'Left Back',
+    'Defensive Midfielder',
+    'Attacking Midfielder',
+    'Winger',
+    'Striker'
 ];
 
-// Función auxiliar para mostrar iniciales si no hay foto
-const getInitials = (name) => {
-    return name ? name.charAt(0).toUpperCase() : '?';
+const calculateAge = (dateString) => {
+    if (!dateString) return '--';
+    
+    const today = new Date();
+    const birthDate = new Date(dateString);
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    return isNaN(age) ? '--' : age;
 };
 </script>
 
 <template>
-    <AppLayout title="Dashboard" :breadcrumbs="breadcrumbs">
-        
-        <div class="flex flex-col gap-6">
-            
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        ⚽ Player Market
-                    </h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Browse active players, check their stats, and watch their highlights.
-                    </p>
-                </div>
-            </div>
+    <AppLayout title="Scouting Dashboard">
+        <template #header>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                Talent Market
+            </h2>
+        </template>
 
-            <div v-if="players.length === 0" class="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                <div class="p-4 rounded-full bg-indigo-50 dark:bg-indigo-900/20 mb-3 text-indigo-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">No active players found</h3>
-                <p class="text-gray-500 dark:text-gray-400 max-w-sm mt-1 mb-4">
-                    The market is currently empty.
-                </p>
-                <Link :href="route('player.profile.edit')" class="text-indigo-600 hover:text-indigo-500 font-semibold hover:underline">
-                    Create your Profile to appear here &rarr;
-                </Link>
-            </div>
-
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div class="py-6">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 
-                <div v-for="player in players" :key="player.id" class="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 overflow-hidden flex flex-col">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6 mb-8 border-b border-gray-700">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="text-xs text-gray-400 uppercase font-bold">Search Player</label>
+                            <input v-model="search" type="text" placeholder="Name..." class="w-full mt-1 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 uppercase font-bold">Position</label>
+                            <select v-model="position" class="w-full mt-1 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-green-500">
+                                <option value="">All Positions</option>
+                                <option v-for="p in positions" :key="p" :value="p">{{ p }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 uppercase font-bold">Dominant Foot</label>
+                            <select v-model="foot" class="w-full mt-1 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-green-500">
+                                <option value="">Any</option>
+                                <option value="Right">Right</option>
+                                <option value="Left">Left</option>
+                                <option value="Both">Both</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="players.data.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     
-                    <div class="h-24 bg-gradient-to-br from-blue-600 to-indigo-700 relative">
-                        <div class="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
-                            <div class="h-16 w-16 rounded-full border-4 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xl font-bold text-gray-600 dark:text-gray-300 shadow-md">
-                                {{ getInitials(player.name) }}
+                    <Link 
+                        v-for="user in players.data" 
+                        :key="user.id" 
+                        :href="route('player.show', user.id)"
+                        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 overflow-hidden group border border-gray-700 flex flex-col"
+                    >
+                        <div class="relative h-48 bg-gradient-to-br from-gray-700 to-gray-900">
+                            <img v-if="user.profile_photo_url" :src="user.profile_photo_url" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-500">
+                            <div v-else class="w-full h-full flex items-center justify-center">
+                                <span class="text-6xl text-gray-600 font-bold">{{ user.name.charAt(0) }}</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-10 pb-6 px-6 text-center flex-1 flex flex-col">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate" :title="player.name">
-                            {{ player.name }}
-                        </h3>
-                        
-                        <div class="flex justify-center gap-2 mt-3 flex-wrap">
-                            <span class="px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full border border-blue-200 dark:border-blue-800">
-                                {{ player.profile?.position || 'N/A' }}
-                            </span>
-                            <span class="px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-full border border-gray-200 dark:border-gray-600">
-                                {{ player.profile?.current_club || 'Free Agent' }}
-                            </span>
-                        </div>
-
-                        <div class="mt-6 grid grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-gray-900 dark:text-white">
-                                    {{ player.profile?.dominant_foot || '-' }}
-                                </span>
-                                <span class="text-[10px] uppercase text-gray-500 font-medium tracking-wider">Foot</span>
-                            </div>
-                            <div class="flex flex-col border-l border-gray-100 dark:border-gray-700">
-                                <span class="font-bold text-gray-900 dark:text-white">
-                                    {{ player.profile?.height ? player.profile.height + 'cm' : '-' }}
-                                </span>
-                                <span class="text-[10px] uppercase text-gray-500 font-medium tracking-wider">Height</span>
+                            
+                            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-4">
+                                <h3 class="text-xl font-bold text-white truncate">{{ user.name }}</h3>
+                                <p class="text-green-400 text-sm font-semibold uppercase tracking-wider">
+                                    {{ user.profile?.position || 'Unlisted' }}
+                                </p>
                             </div>
                         </div>
 
-                        <div class="mt-6 pt-2">
-                            <Link 
-                                :href="route().has('player.show') ? route('player.show', player.id) : '#'"
-                                class="w-full inline-flex justify-center items-center px-4 py-2.5 bg-gray-900 dark:bg-indigo-600 hover:bg-gray-800 dark:hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            >
-                                View Profile & Videos
-                            </Link>
+                        <div class="p-4 grid grid-cols-3 gap-4 text-center border-b border-gray-700 bg-gray-800/50">
+                            <div>
+                                <div class="text-xs text-gray-400 uppercase font-bold">Age</div>
+                                <div class="text-lg font-bold text-white">{{ calculateAge(user.profile?.birth_date) }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400 uppercase font-bold">Height</div>
+                                <div class="text-lg font-bold text-white">{{ user.profile?.height ? user.profile.height + 'm' : '--' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-400 uppercase font-bold">Foot</div>
+                                <div class="text-lg font-bold text-white">{{ user.profile?.dominant_foot || '--' }}</div>
+                            </div>
                         </div>
-                    </div>
+
+                        <div class="p-4 flex justify-between items-center bg-gray-800">
+                            <div class="flex items-center text-sm text-gray-400 font-medium">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                                {{ user.profile?.current_club || 'Free Agent' }}
+                            </div>
+                            
+                            <div class="flex items-center gap-1 text-xs font-bold bg-gray-700 px-2 py-1 rounded-full text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {{ user.videos_count || 0 }}
+                            </div>
+                        </div>
+                    </Link>
+
+                </div>
+
+                <div v-else class="text-center py-20 bg-gray-800 rounded-lg border border-dashed border-gray-600">
+                    <p class="text-gray-400 text-lg">No players found matching your filters.</p>
+                    <button @click="search=''; position=''; foot=''" class="mt-2 text-green-400 font-bold underline">
+                        Clear all filters
+                    </button>
                 </div>
 
             </div>

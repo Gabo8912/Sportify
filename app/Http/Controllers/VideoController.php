@@ -7,6 +7,7 @@ use App\Models\Video;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
+
 class VideoController extends Controller
 {
     //Function to show view to upload video
@@ -34,5 +35,18 @@ class VideoController extends Controller
 
         return redirect()->route('player.show', $request->user()->id)
             ->with('message', 'Video uploaded successfully! 🎥');
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $video =  $request-> user()->videos()->findOrFail($id);
+
+        if ($video->video_url) {
+            Storage::disk('public')->delete($video->video_url);
+        }
+
+        $video->delete();
+
+        return back()->with('message', 'Video deleted successfully.');
     }
 }

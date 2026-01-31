@@ -1,14 +1,27 @@
 <script setup>
-import { Link, usePage } from '@inertiajs/vue3';
-import { route } from 'ziggy-js'; // Importamos route para los enlaces
-
+import { Link, usePage, useForm } from '@inertiajs/vue3';
+import { route } from 'ziggy-js';
+import AppLayout from '@/layouts/AppLayout.vue';
 const props = defineProps({
     player: Object
 });
 
-// Detectar si hay usuario logueado o es un visitante
 const page = usePage();
 const currentUser = page.props.auth.user;
+
+const form = useForm({
+    title: '',
+    video_file: null,
+});
+
+const submitVideo = () => {
+    form.post(route('videos.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.reset();
+        },
+    });
+};
 
 const getAge = (birthDate) => {
     if (!birthDate) return 'N/A';
@@ -24,34 +37,13 @@ const getAge = (birthDate) => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 font-sans text-gray-900 antialiased">
+    <AppLayout title="Player Profile">
         
-        <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <Link href="/dashboard" class="font-bold text-xl text-indigo-600">
-                            ⚽ ScoutApp
-                        </Link>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div v-if="currentUser">
-                            <Link href="/dashboard" class="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600">
-                                Dashboard
-                            </Link>
-                        </div>
-                        <div v-else class="flex gap-4">
-                            <Link :href="route('login')" class="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600">
-                                Log in
-                            </Link>
-                            <Link :href="route('register')" class="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600">
-                                Register
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </nav>
+        <template #header>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                Player Profile
+            </h2>
+        </template>
 
         <div class="py-12">
             <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
@@ -108,14 +100,29 @@ const getAge = (birthDate) => {
                                 <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                     📹 Video Highlights
                                 </h3>
-                                
-                                <Link 
-                                    v-if="currentUser && currentUser.id === player.id" 
-                                    :href="route('videos.create')"
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2 px-4 rounded-lg shadow transition"
-                                >
-                                    + Upload Highlight
-                                </Link>
+                            </div>
+
+                            <div v-if="currentUser && currentUser.id === player.id" class="mb-8 p-4 bg-indigo-50 dark:bg-gray-700 rounded-lg border border-indigo-100 dark:border-gray-600">
+                                <h4 class="font-bold text-indigo-700 dark:text-indigo-300 mb-3">Upload New Highlight</h4>
+                                <form @submit.prevent="submitVideo" class="flex flex-col md:flex-row gap-4 items-end">
+                                    <div class="w-full md:w-1/3">
+                                        <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">Title</label>
+                                        <input v-model="form.title" type="text" placeholder="Gol vs Team X..." class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 p-2 text-sm" required />
+                                    </div>
+                                    <div class="w-full md:w-1/3">
+                                        <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase mb-1">Video File</label>
+                                        <input type="file" @input="form.video_file = $event.target.files[0]" accept="video/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" required />
+                                    </div>
+                                    <div class="w-full md:w-auto">
+                                        <button type="submit" :disabled="form.processing" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full md:w-auto disabled:opacity-50">
+                                            {{ form.processing ? 'Uploading...' : 'Upload Video' }}
+                                        </button>
+                                    </div>
+                                </form>
+                                <div v-if="form.progress" class="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+                                    <div class="bg-indigo-600 h-1.5 rounded-full" :style="{ width: form.progress.percentage + '%' }"></div>
+                                </div>
+                                <div v-if="form.errors.video_file" class="text-red-500 text-xs mt-2">{{ form.errors.video_file }}</div>
                             </div>
 
                             <div v-if="!player.videos || player.videos.length === 0" class="text-center py-12 bg-gray-50 dark:bg-gray-750 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
@@ -142,12 +149,13 @@ const getAge = (birthDate) => {
                                             <span class="text-xs text-gray-500 dark:text-gray-400">
                                                 📅 {{ new Date(video.created_at).toLocaleDateString() }}
                                             </span>
-                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
                         </div>
-                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-6 text-center">
@@ -158,5 +166,5 @@ const getAge = (birthDate) => {
 
             </div>
         </div>
-    </div>
+    </AppLayout>
 </template>
