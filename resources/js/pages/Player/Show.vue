@@ -71,10 +71,22 @@ const sendMessage = () => {
                 
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg border border-gray-200 dark:border-gray-700">
                     
-                    <div class="h-48 bg-gradient-to-r from-blue-600 to-indigo-700 w-full relative">
-                        <div class="absolute -bottom-16 left-8">
+                    <div class="h-48 bg-gradient-to-r from-blue-600 to-indigo-700 w-full relative ">
+                        <img 
+                            v-if="player.profile?.cover_url" 
+                            :src="player.profile.cover_url" 
+                            class="w-full h-full object-cover rounded-t-lg"
+                            alt="Cover"
+                        />
+                        
+                        <div class="absolute -bottom-16 left-8 z-10">
                             <div class="h-32 w-32 rounded-full border-4 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden shadow-lg">
-                                <span class="text-4xl font-bold text-gray-500 dark:text-gray-300">
+                                <img 
+                                    v-if="player.profile_photo_url" 
+                                    :src="player.profile_photo_url" 
+                                    class="h-full w-full object-cover"
+                                />
+                                <span v-else class="text-4xl font-bold text-gray-500 dark:text-gray-300">
                                     {{ player.name.charAt(0) }}
                                 </span>
                             </div>
@@ -99,50 +111,29 @@ const sendMessage = () => {
 
                         <div v-if="currentUser && currentUser.id !== player.id" class="mt-4">
         
-        <button 
-            @click="showMessageInput = !showMessageInput"
-            class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
-        >
-            ✉️ Contact Player
-        </button>
+                            <button 
+                                @click="showMessageInput = !showMessageInput"
+                                class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+                            >
+                                ✉️ Contact Player
+                            </button>
 
-        <div v-if="showMessageInput" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm transition-all">
-    
-    <label for="message_body" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Write your message to {{ player.name }}
-    </label>
-
-    <textarea 
-        id="message_body"
-        v-model="messageForm.body" 
-        rows="4"
-        class="w-full rounded-md border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 placeholder-gray-400 dark:placeholder-gray-500"
-        placeholder="Hi, I represents a club and would like to offer you a trial..."
-    ></textarea>
-    
-    <div v-if="messageForm.errors.body" class="text-red-500 text-xs mt-1">
-        {{ messageForm.errors.body }}
-    </div>
-    
-    <div class="flex justify-end items-center gap-3 mt-3">
-        <button 
-            @click="showMessageInput = false"
-            class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline"
-        >
-            Cancel
-        </button>
-
-        <button 
-            @click="sendMessage" 
-            :disabled="messageForm.processing"
-            class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring focus:ring-indigo-300 disabled:opacity-25 transition"
-        >
-            <span v-if="messageForm.processing">Sending...</span>
-            <span v-else>Send Message 🚀</span>
-        </button>
-    </div>
-</div>
-    </div>
+                            <div v-if="showMessageInput" class="mt-2 bg-gray-100 p-4 rounded border">
+                                <textarea 
+                                    v-model="messageForm.body" 
+                                    class="w-full rounded border-gray-300" 
+                                    placeholder="Hi, I'm a scout from..."
+                                ></textarea>
+                                
+                                <button 
+                                    @click="sendMessage" 
+                                    :disabled="messageForm.processing"
+                                    class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm"
+                                >
+                                    Send
+                                </button>
+                            </div>
+                        </div>
 
                         <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-b border-gray-200 dark:border-gray-700 py-6">
                             <div class="text-center">

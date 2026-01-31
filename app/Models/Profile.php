@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Storage;
 
 
 class Profile extends Model
@@ -23,10 +24,19 @@ class Profile extends Model
         'profile_photo_path',
         'cover_photo_path',
     ];
+
+    protected $appends = ['cover_url'];
     
     //Connection with profile owner (the bridge)
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getCoverUrlAttribute()
+    {
+        return $this->cover_photo_path
+            ? Storage::url($this->cover_photo_path)
+            : null;
     }
 }

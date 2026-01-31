@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
 import { useForm, usePage, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue'; // <--- Agregamos ref
+import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ const currentUser = computed(() => page.props.auth.user);
 const isPlayer = computed(() => currentUser.value.role === 'player');
 const isScout = computed(() => currentUser.value.role === 'scout');
 
+
 const photoInput = ref(null);
 const photoPreview = ref(null);
 const photoForm = useForm({
@@ -31,9 +32,7 @@ const selectNewPhoto = () => {
 const updatePhotoPreview = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     photoForm.photo = file;
-
     const reader = new FileReader();
     reader.onload = (e) => {
         photoPreview.value = e.target.result;
@@ -46,7 +45,7 @@ const submitPhoto = () => {
         photoForm.post(route('profile.photo.update'), {
             preserveScroll: true,
             onSuccess: () => {
-                photoPreview.value = null; // Limpiar preview
+                photoPreview.value = null;
                 clearPhotoInput();
             },
         });
@@ -58,11 +57,35 @@ const clearPhotoInput = () => {
         photoInput.value.value = null;
     }
 };
-// ---------------------------------------
 
+// --- LÓGICA FOTO DE PORTADA (COVER) ---
+const coverInput = ref(null);
+const coverPreview = ref(null);
+
+const selectNewCover = () => {
+    coverInput.value.click();
+};
+
+const updateCoverPreview = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Asignamos el archivo al formulario principal
+    form.cover_photo = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        coverPreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+// --- FORMULARIO PRINCIPAL (DATOS + PORTADA) ---
 const form = useForm({
+    _method: 'PATCH',
     name: props.user.name,
     email: props.user.email,
+    cover_photo: null,
     birth_date: props.profile?.birth_date || '',
     current_club: props.profile?.current_club || '', 
     position: props.profile?.position || '',
@@ -71,17 +94,18 @@ const form = useForm({
     dominant_foot: props.profile?.dominant_foot || 'Right',
 });
 
+const submitProfile = () => {
+    form.post(route('player.profile.update'), {
+        preserveScroll: true,
+    });
+};
+
+// --- PASSWORD ---
 const passwordForm = useForm({
     current_password: '',
     password: '',
     password_confirmation: '',
 });
-
-const submitProfile = () => {
-    form.patch(route('player.profile.update'), {
-        preserveScroll: true,
-    });
-};
 
 const submitPassword = () => {
     passwordForm.put(route('player.password.update'), {
@@ -111,6 +135,47 @@ const deleteVideo = (videoId) => {
 
         <div class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen space-y-8">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-8">
+
+                <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">🖼️ Cover Photo</h3>
+                        <Button type="button" variant="outline" size="sm" @click="selectNewCover">
+                            Change Cover
+                        </Button>
+                    </div>
+                    
+                    <div class="relative h-48 w-full rounded-xl overflow-hidden bg-gray-900 border border-gray-700 group cursor-pointer" @click="selectNewCover">
+                        
+                        <img v-if="coverPreview" :src="coverPreview" class="w-full h-full object-cover" />
+                        
+                        <img v-else-if="profile?.cover_url" :src="profile.cover_url" class="w-full h-full object-cover" />
+                        
+                        <div v-else class="w-full h-full bg-gradient-to-r from-green-900 to-gray-900 flex items-center justify-center">
+                            <span class="text-gray-500 font-medium">No cover photo set</span>
+                        </div>
+
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="text-white font-bold">Click to upload</span>
+                        </div>
+                    </div>
+
+                    <input 
+                        type="file" 
+                        ref="coverInput"
+                        class="hidden"
+                        @change="updateCoverPreview"
+                        accept="image/*"
+                    />
+                    
+                    <InputError :message="form.errors.cover_photo" class="mt-2" />
+                    <p class="text-xs text-gray-500 mt-2">Recommended size: 1200x400px. Max 10MB.</p>
+
+                    <div v-if="coverPreview" class="mt-4 flex justify-end">
+                        <Button @click="submitProfile" :disabled="form.processing">
+                            Upload & Save Cover
+                        </Button>
+                    </div>
+                </div>
 
                 <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">📸 Profile Photo</h3>
@@ -152,6 +217,7 @@ const deleteVideo = (videoId) => {
                         </div>
                     </form>
                 </div>
+
                 <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">👤 Account Information</h3>
                     <form @submit.prevent="submitProfile" class="grid gap-6">

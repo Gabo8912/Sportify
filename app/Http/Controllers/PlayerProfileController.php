@@ -8,9 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule; // Importante para reglas de validación avanzadas
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class PlayerProfileController extends Controller
 {
@@ -35,6 +36,7 @@ class PlayerProfileController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'cover_photo' => ['nullable', 'image', 'max:10240'],
 
             'birth_date' => ['required', 'date'], 
             'current_club' => ['nullable', 'string', 'max:100'], 
@@ -60,6 +62,14 @@ class PlayerProfileController extends Controller
             'weight' => $validated['weight'] ?? 0,
             'dominant_foot' => $validated['dominant_foot'] ?? 'Right',
         ];
+
+        if ($request->hasFile('cover_photo')) {
+        if ($user->profile && $user->profile->cover_photo_path) {
+            Storage::disk('public')->delete($user->profile->cover_photo_path);
+        }
+        $path = $request->file('cover_photo')->store('covers', 'public');
+        $profileData['cover_photo_path'] = $path;
+    }
 
         Profile::updateOrCreate(
             ['user_id' => $user->id],
