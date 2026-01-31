@@ -151,7 +151,7 @@ const getAge = (birthDate) => {
                 </div>
 
                 <div class="mt-6 text-center">
-                    <Link href="/dashboard" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                    <Link href="/feed" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
                         ← Go Home
                     </Link>
                 </div>
