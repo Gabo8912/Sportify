@@ -38,7 +38,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/videos/upload', [VideoController::class, 'create'])->name('videos.create');
     Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
+    Route::get('/feed', [App\Http\Controllers\VideoFeedController::class, 'index'])->name('feed');    
 });
+
 
 
 

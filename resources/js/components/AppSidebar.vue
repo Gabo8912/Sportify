@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, User} from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, User, GalleryVerticalEnd} from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -25,8 +25,13 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Edit Profile',
-        href: '/player-profile', // Usamos la ruta directa
+        href: '/player-profile',
         icon: User,
+    },
+    {
+        title: 'Video Feed',
+        href: '/feed',
+        icon: GalleryVerticalEnd,
     },
 ];
 
