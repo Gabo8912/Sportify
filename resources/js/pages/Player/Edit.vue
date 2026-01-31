@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
-import { useForm, usePage, router } from '@inertiajs/vue3'; // Importamos router
-import { computed } from 'vue';
+import { useForm, usePage, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue'; // <--- Agregamos ref
 import { route } from 'ziggy-js';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,48 @@ const currentUser = computed(() => page.props.auth.user);
 const isPlayer = computed(() => currentUser.value.role === 'player');
 const isScout = computed(() => currentUser.value.role === 'scout');
 
-// --- FORMULARIO 1: Datos Generales y Perfil ---
+const photoInput = ref(null);
+const photoPreview = ref(null);
+const photoForm = useForm({
+    photo: null,
+});
+
+const selectNewPhoto = () => {
+    photoInput.value.click();
+};
+
+const updatePhotoPreview = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    photoForm.photo = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        photoPreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+const submitPhoto = () => {
+    if (photoForm.photo) {
+        photoForm.post(route('profile.photo.update'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                photoPreview.value = null; // Limpiar preview
+                clearPhotoInput();
+            },
+        });
+    }
+};
+
+const clearPhotoInput = () => {
+    if (photoInput.value) {
+        photoInput.value.value = null;
+    }
+};
+// ---------------------------------------
+
 const form = useForm({
     name: props.user.name,
     email: props.user.email,
@@ -30,7 +71,6 @@ const form = useForm({
     dominant_foot: props.profile?.dominant_foot || 'Right',
 });
 
-// --- FORMULARIO 2: Contraseña ---
 const passwordForm = useForm({
     current_password: '',
     password: '',
@@ -50,7 +90,6 @@ const submitPassword = () => {
     });
 };
 
-// --- FUNCIÓN NUEVA: BORRAR VIDEO ---
 const deleteVideo = (videoId) => {
     if (confirm('Are you sure you want to delete this video? This cannot be undone.')) {
         router.delete(route('videos.destroy', videoId), {
@@ -72,7 +111,47 @@ const deleteVideo = (videoId) => {
 
         <div class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen space-y-8">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-8">
-                
+
+                <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">📸 Profile Photo</h3>
+                    
+                    <form @submit.prevent="submitPhoto" class="flex flex-col sm:flex-row items-center gap-8">
+                        <div class="shrink-0 relative group">
+                            <img 
+                                :src="photoPreview || currentUser.profile_photo_url" 
+                                alt="Profile Photo" 
+                                class="h-24 w-24 object-cover rounded-full border-4 border-gray-200 dark:border-gray-700 shadow-sm"
+                            />
+                        </div>
+
+                        <div class="flex flex-col gap-4 w-full max-w-md">
+                            <div class="grid gap-2">
+                                <Label class="sr-only" for="photo">Select Photo</Label>
+                                <input 
+                                    type="file" 
+                                    ref="photoInput"
+                                    class="hidden"
+                                    @change="updatePhotoPreview"
+                                    accept="image/*"
+                                />
+
+                                <div class="flex gap-4">
+                                    <Button type="button" variant="outline" @click="selectNewPhoto">
+                                        Select New Photo
+                                    </Button>
+                                    
+                                    <Button v-if="photoPreview" type="submit" :disabled="photoForm.processing">
+                                        Save Photo
+                                    </Button>
+                                </div>
+                                <InputError :message="photoForm.errors.photo" />
+                                <p class="text-xs text-gray-500 mt-1">
+                                    JPG, JPEG, PNG up to 5MB.
+                                </p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">👤 Account Information</h3>
                     <form @submit.prevent="submitProfile" class="grid gap-6">

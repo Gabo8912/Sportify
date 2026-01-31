@@ -7,6 +7,7 @@ use App\Http\Controllers\PlayerProfileController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\Settings\ProfileController;
 
 
 
@@ -28,23 +29,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->name('dashboard');
     
 
-    Route::get('/player-profile', [PlayerProfileController::class, 'edit'])
-        ->name('player.profile.edit');
+    Route::get('/player-profile', [PlayerProfileController::class, 'edit'])->name('player.profile.edit');
         
-    Route::patch('/player-profile', [PlayerProfileController::class, 'update'])
-        ->name('player.profile.update');
-
+    Route::patch('/player-profile', [PlayerProfileController::class, 'update'])->name('player.profile.update');
+    Route::post('/player/{id}/follow', [App\Http\Controllers\PlayerProfileController::class, 'toggleFollow'])->name('player.follow');
     Route::put('/player-profile/password', [PlayerProfileController::class, 'updatePassword'])->name('player.password.update');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
 
     //Videos
     Route::get('/videos/upload', [VideoController::class, 'create'])->name('videos.create');
     Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
     Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
-    Route::get('/feed', [App\Http\Controllers\VideoFeedController::class, 'index'])->name('feed');   
+    Route::get('/feed', [App\Http\Controllers\VideoFeedController::class, 'index'])->name('feed');
     Route::post('/videos/{id}/like', [App\Http\Controllers\VideoFeedController::class, 'toggleLike'])->name('videos.like');
-    Route::post('/videos/{id}/view', [App\Http\Controllers\VideoFeedController::class, 'incrementView'])->name('videos.view'); 
-    Route::get('/player/{id}', [App\Http\Controllers\PlayerProfileController::class, 'show'])->name('player.show');
-
+    Route::post('/videos/{id}/view', [App\Http\Controllers\VideoFeedController::class, 'incrementView'])->name('videos.view');
 
     //Messages
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');

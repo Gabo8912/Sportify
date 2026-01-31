@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule; // Importante para reglas de validación avanzadas
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
@@ -15,7 +17,8 @@ class PlayerProfileController extends Controller
     public function edit(Request $request)
     {
         $user = $request->user();
-        $user->load('profile','videos');
+        
+        $user->load('profile', 'videos');
 
         return Inertia::render('Player/Edit', [
             'profile' => $user->profile,
@@ -23,36 +26,40 @@ class PlayerProfileController extends Controller
         ]);
     }
 
-    // Actualiza Datos Personales y Perfil
     public function update(Request $request)
     {
         $user = $request->user();
+        $isPlayer = $user->role === 'player';
 
-        // 1. Validar todo junto
+        
         $validated = $request->validate([
-            // Datos de Cuenta (Tabla Users)
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
 
-            // Datos de Perfil (Tabla Profiles)
-            'birth_date' => 'required|date',
-            'current_club' => 'nullable|string|max:100', // Usado por Scouts y Players
+            'birth_date' => ['required', 'date'], 
+            'current_club' => ['nullable', 'string', 'max:100'], 
             
-            // Solo para Players (nullable para que el Scout no falle)
-            'position' => 'nullable|string|max:50',
-            'height' => 'nullable|integer|min:100|max:250',
-            'weight' => 'nullable|integer|min:30|max:150',
-            'dominant_foot' => 'nullable|string|max:20',
+            'position' => [$isPlayer ? 'required' : 'nullable', 'string', 'max:50'],
+            'height' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:100', 'max:250'],
+            'weight' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:30', 'max:150'],
+            'dominant_foot' => [$isPlayer ? 'required' : 'nullable', 'string', 'max:20'],
         ]);
 
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
         ]);
-        $profileData = $request->only([
-            'birth_date', 'current_club', 'position', 
-            'height', 'weight', 'dominant_foot'
-        ]);
+
+
+        $profileData = [
+            'birth_date' => $validated['birth_date'],
+            'current_club' => $validated['current_club'] ?? '',
+            
+            'position' => $validated['position'] ?? 'N/A',
+            'height' => $validated['height'] ?? 0,
+            'weight' => $validated['weight'] ?? 0,
+            'dominant_foot' => $validated['dominant_foot'] ?? 'Right',
+        ];
 
         Profile::updateOrCreate(
             ['user_id' => $user->id],
@@ -62,7 +69,6 @@ class PlayerProfileController extends Controller
         return Redirect::route('player.profile.edit')->with('success', 'Profile updated successfully.');
     }
 
-    // NUEVO: Método exclusivo para cambiar contraseña
     public function updatePassword(Request $request)
     {
         $validated = $request->validate([
@@ -77,10 +83,42 @@ class PlayerProfileController extends Controller
         return back()->with('success', 'Password updated successfully.');
     }
 
-    public function show($id){
-        $user = User::with('profile', 'videos')->findOrFail($id);
-        return Inertia::render('Player/Show', ['player' => $user]);
+    public function show($id)
+    {
+        $currentUser = Auth::user();
+
+        $player = User::where('id', $id)
+            ->with([
+                'profile',
+                'videos' => fn($q) => $q->latest(), 
+                'followers.profile',
+                'following.profile'
+            ])
+            ->withCount(['videos', 'followers', 'following'])
+            ->findOrFail($id);
+
+        $isFollowing = false;
+        if ($currentUser) {
+            $isFollowing = $currentUser->following()->where('followed_id', $id)->exists();
+        }
+
+        return Inertia::render('Player/Show', [
+            'player' => $player,
+            'isFollowing' => $isFollowing,
+            'canFollow' => $currentUser && $currentUser->id !== $player->id
+        ]);
     }
 
-    
+    public function toggleFollow(Request $request, $id)
+    {
+        $user = $request->user();
+
+        if ($user->id == $id) {
+            return back()->with('error', 'You cannot follow yourself.');
+        }
+
+        $user->following()->toggle($id);
+
+        return back(); 
+    }
 }
