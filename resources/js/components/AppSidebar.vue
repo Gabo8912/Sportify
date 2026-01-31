@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { BookOpen, Folder, LayoutGrid, User as UserIcon, GalleryVerticalEnd, Video } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, User as UserIcon, GalleryVerticalEnd, Video, Mail } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -13,6 +13,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import AppLogo from './AppLogo.vue';
@@ -38,6 +39,11 @@ const mainNavItems = computed(() => [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Messages',
+        href: route('messages.index'),
+        icon: Mail,
     },
     ...(isPlayer.value ? [{
         title: 'My Highlights',

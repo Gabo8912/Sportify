@@ -6,6 +6,8 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\PlayerProfileController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MessageController;
+
 
 
 Route::get('/', function () {
@@ -34,7 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::put('/player-profile/password', [PlayerProfileController::class, 'updatePassword'])->name('player.password.update');
 
-
+    //Videos
     Route::get('/videos/upload', [VideoController::class, 'create'])->name('videos.create');
     Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
     Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
@@ -42,6 +44,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/videos/{id}/like', [App\Http\Controllers\VideoFeedController::class, 'toggleLike'])->name('videos.like');
     Route::post('/videos/{id}/view', [App\Http\Controllers\VideoFeedController::class, 'incrementView'])->name('videos.view'); 
     Route::get('/player/{id}', [App\Http\Controllers\PlayerProfileController::class, 'show'])->name('player.show');
+
+
+    //Messages
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    
 });
 
 
