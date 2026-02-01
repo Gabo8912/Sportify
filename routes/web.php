@@ -8,6 +8,7 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\CommentController;
 
 
 
@@ -30,7 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
 
     Route::get('/player-profile', [PlayerProfileController::class, 'edit'])->name('player.profile.edit');
-        
+    Route::get('/scout-profile', [PlayerProfileController::class, 'edit'])->name('scout.profile.edit');
     Route::patch('/player-profile', [PlayerProfileController::class, 'update'])->name('player.profile.update');
     Route::post('/player/{id}/follow', [App\Http\Controllers\PlayerProfileController::class, 'toggleFollow'])->name('player.follow');
     Route::put('/player-profile/password', [PlayerProfileController::class, 'updatePassword'])->name('player.password.update');
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/feed', [App\Http\Controllers\VideoFeedController::class, 'index'])->name('feed');
     Route::post('/videos/{id}/like', [App\Http\Controllers\VideoFeedController::class, 'toggleLike'])->name('videos.like');
     Route::post('/videos/{id}/view', [App\Http\Controllers\VideoFeedController::class, 'incrementView'])->name('videos.view');
+    Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->name('comments.store');
 
     //Messages
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');

@@ -48,21 +48,20 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class);
     }
 
+    // En User.php
     protected function profilePhotoUrl(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                $path = $this->profile?->profile_photo_path;
+{
+    return Attribute::make(
+        get: function () {
+            // Intentar sacar foto del perfil
+            $path = $this->profile?->profile_photo_path;
+            if ($path) return asset('storage/' . $path);
 
-                if ($path) {
-                    return asset('storage/' . $path);
-                }
-
-                $name = urlencode($this->name);
-                return 'https://ui-avatars.com/api/?name=' . $name . '&color=7F9CF5&background=EBF4FF';
-            },
-        );
-    }
+            // Si no hay, usar UI Avatars
+            return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
+        },
+    );
+}
 
     
     public function videos(){
@@ -96,7 +95,7 @@ public function scopeFilter($query, array $filters)
         $q->when($filters['club'] ?? null, fn($q, $c) => $q->where('current_club', 'like', '%'.$c.'%'));
         $q->when($filters['location'] ?? null, fn($q, $l) => $q->where('location', 'like', '%'.$l.'%'));
         $q->when($filters['availability'] ?? null, fn($q, $a) => $q->where('availability_status', $a));
-        
+
         if ($filters['age_min'] ?? null) {
             $date = now()->subYears($filters['age_min'])->endOfYear();
             $q->where('birth_date', '<=', $date);

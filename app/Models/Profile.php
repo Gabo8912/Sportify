@@ -27,6 +27,7 @@ class Profile extends Model
 
     protected $appends = ['cover_url'];
     
+    
     //Connection with profile owner (the bridge)
     public function user()
     {

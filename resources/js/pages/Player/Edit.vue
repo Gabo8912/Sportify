@@ -18,7 +18,7 @@ const currentUser = computed(() => page.props.auth.user);
 const isPlayer = computed(() => currentUser.value.role === 'player');
 const isScout = computed(() => currentUser.value.role === 'scout');
 
-
+// --- LÓGICA FOTO DE PERFIL ---
 const photoInput = ref(null);
 const photoPreview = ref(null);
 const photoForm = useForm({
@@ -70,7 +70,6 @@ const updateCoverPreview = (event) => {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Asignamos el archivo al formulario principal
     form.cover_photo = file;
 
     const reader = new FileReader();
@@ -97,8 +96,18 @@ const form = useForm({
 });
 
 const submitProfile = () => {
+    // Usamos POST directamente si hay archivos de por medio
+    // Laravel leerá el campo _method: 'PATCH' dentro del formulario
     form.post(route('player.profile.update'), {
         preserveScroll: true,
+        forceFormData: true, // Esto asegura que se envíe como multipart/form-data
+        onSuccess: () => {
+            coverPreview.value = null;
+            // Opcional: mostrar un mensaje de éxito
+        },
+        onError: (errors) => {
+            console.log(errors); // Mira la consola para ver qué rebotó Laravel
+        }
     });
 };
 
@@ -147,28 +156,17 @@ const deleteVideo = (videoId) => {
                     </div>
                     
                     <div class="relative h-48 w-full rounded-xl overflow-hidden bg-gray-900 border border-gray-700 group cursor-pointer" @click="selectNewCover">
-                        
                         <img v-if="coverPreview" :src="coverPreview" class="w-full h-full object-cover" />
-                        
                         <img v-else-if="profile?.cover_url" :src="profile.cover_url" class="w-full h-full object-cover" />
-                        
                         <div v-else class="w-full h-full bg-gradient-to-r from-green-900 to-gray-900 flex items-center justify-center">
                             <span class="text-gray-500 font-medium">No cover photo set</span>
                         </div>
-
                         <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span class="text-white font-bold">Click to upload</span>
                         </div>
                     </div>
 
-                    <input 
-                        type="file" 
-                        ref="coverInput"
-                        class="hidden"
-                        @change="updateCoverPreview"
-                        accept="image/*"
-                    />
-                    
+                    <input type="file" ref="coverInput" class="hidden" @change="updateCoverPreview" accept="image/*" />
                     <InputError :message="form.errors.cover_photo" class="mt-2" />
                     <p class="text-xs text-gray-500 mt-2">Recommended size: 1200x400px. Max 10MB.</p>
 
@@ -182,8 +180,8 @@ const deleteVideo = (videoId) => {
                 <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">📸 Profile Photo</h3>
                     
-                    <form @submit.prevent="submitPhoto" class="flex flex-col sm:flex-row items-center gap-8">
-                        <div class="shrink-0 relative group">
+                    <div class="flex flex-col sm:flex-row items-center gap-8">
+                        <div class="shrink-0 relative">
                             <img 
                                 :src="photoPreview || currentUser.profile_photo_url" 
                                 alt="Profile Photo" 
@@ -193,7 +191,6 @@ const deleteVideo = (videoId) => {
 
                         <div class="flex flex-col gap-4 w-full max-w-md">
                             <div class="grid gap-2">
-                                <Label class="sr-only" for="photo">Select Photo</Label>
                                 <input 
                                     type="file" 
                                     ref="photoInput"
@@ -207,7 +204,7 @@ const deleteVideo = (videoId) => {
                                         Select New Photo
                                     </Button>
                                     
-                                    <Button v-if="photoPreview" type="submit" :disabled="photoForm.processing">
+                                    <Button v-if="photoPreview" type="button" @click="submitPhoto" :disabled="photoForm.processing">
                                         Save Photo
                                     </Button>
                                 </div>
@@ -217,7 +214,7 @@ const deleteVideo = (videoId) => {
                                 </p>
                             </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
 
                 <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-gray-200 dark:border-gray-700">
@@ -244,7 +241,6 @@ const deleteVideo = (videoId) => {
                     </h3>
 
                     <form @submit.prevent="submitProfile" class="space-y-6">
-                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="grid gap-2">
                                 <Label for="birth_date">Date of Birth</Label>
@@ -267,28 +263,27 @@ const deleteVideo = (videoId) => {
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                        
-                        <div class="grid gap-2">
-                            <Label for="location">📍 Location (City, Country)</Label>
-                            <Input id="location" v-model="form.location" placeholder="e.g. Madrid, Spain" />
-                            <InputError :message="form.errors.location" />
-                        </div>
+                            <div class="grid gap-2">
+                                <Label for="location">📍 Location (City, Country)</Label>
+                                <Input id="location" v-model="form.location" placeholder="e.g. Madrid, Spain" />
+                                <InputError :message="form.errors.location" />
+                            </div>
 
-                        <div class="grid gap-2">
-                            <Label for="availability_status">📢 Availability Status</Label>
-                            <select 
-                                id="availability_status"
-                                v-model="form.availability_status" 
-                                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm dark:text-white dark:bg-gray-900"
-                            >
-                                <option value="Available">Available</option>
-                                <option value="Looking for Club">Looking for Club</option>
-                                <option value="Under Contract">Under Contract</option>
-                                <option value="Injured">Injured</option>
-                            </select>
-                            <InputError :message="form.errors.availability_status" />
+                            <div class="grid gap-2">
+                                <Label for="availability_status">📢 Availability Status</Label>
+                                <select 
+                                    id="availability_status"
+                                    v-model="form.availability_status" 
+                                    class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm dark:text-white dark:bg-gray-900"
+                                >
+                                    <option value="Available">Available</option>
+                                    <option value="Looking for Club">Looking for Club</option>
+                                    <option value="Under Contract">Under Contract</option>
+                                    <option value="Injured">Injured</option>
+                                </select>
+                                <InputError :message="form.errors.availability_status" />
+                            </div>
                         </div>
-                    </div>
 
                         <div v-if="isPlayer" class="space-y-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                             <div class="grid gap-2">
@@ -357,12 +352,7 @@ const deleteVideo = (videoId) => {
                                     <p class="text-xs text-gray-500">{{ new Date(video.created_at).toLocaleDateString() }}</p>
                                 </div>
                             </div>
-                            
-                            <Button 
-                                @click="deleteVideo(video.id)"
-                                variant="destructive"
-                                size="sm"
-                            >
+                            <Button @click="deleteVideo(video.id)" variant="destructive" size="sm">
                                 Delete 🗑️
                             </Button>
                         </div>
@@ -371,7 +361,6 @@ const deleteVideo = (videoId) => {
 
                 <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-8 border border-red-100 dark:border-red-900/30">
                     <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-4">🔒 Security</h3>
-                    
                     <form @submit.prevent="submitPassword" class="space-y-6">
                         <div class="grid grid-cols-1 gap-4 max-w-xl">
                             <div class="grid gap-2">
@@ -390,7 +379,6 @@ const deleteVideo = (videoId) => {
                                 <InputError :message="passwordForm.errors.password_confirmation" />
                             </div>
                         </div>
-
                         <div class="flex justify-start">
                             <Button type="submit" variant="destructive" :disabled="passwordForm.processing">
                                 🔑 Update Password
