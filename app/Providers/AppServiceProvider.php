@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\URL; // <--- Importante que esté aquí
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,13 +24,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 1. FORZAR HTTPS EN PRODUCCIÓN (RAILWAY)
         if($this->app->environment('production')) {
             URL::forceScheme('https');
         }
-    }
 
-    protected function configureDefaults(): void
-    {
+        // 2. CONFIGURACIONES POR DEFECTO (Las movimos aquí para que se ejecuten)
         Date::use(CarbonImmutable::class);
 
         DB::prohibitDestructiveCommands(
