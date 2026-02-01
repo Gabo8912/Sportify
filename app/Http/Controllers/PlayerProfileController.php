@@ -28,58 +28,60 @@ class PlayerProfileController extends Controller
     }
 
     public function update(Request $request)
-{
-    $user = $request->user();
-    $isPlayer = $user->role === 'player';
+    {
+        $user = $request->user();
+        $isPlayer = $user->role === 'player';
 
-    $validated = $request->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-        'cover_photo' => ['nullable', 'image', 'max:10240'],
-        'birth_date' => ['required', 'date'], 
-        'current_club' => ['nullable', 'string', 'max:100'],
-        'location' => ['nullable', 'string', 'max:255'],
-        // CAMBIO: Añadimos 'nullable' y quitamos rigidez en el Rule::in por si acaso
-        'availability_status' => ['nullable', 'string'], 
-        'position' => [$isPlayer ? 'required' : 'nullable', 'string', 'max:50'],
-        'height' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:0', 'max:250'],
-        'weight' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:0', 'max:150'],
-        'dominant_foot' => [$isPlayer ? 'required' : 'nullable', 'string', 'max:20'],
-    ]);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'cover_photo' => ['nullable', 'image', 'max:10240'],
+            'birth_date' => ['required', 'date'], 
+            'current_club' => ['nullable', 'string', 'max:100'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'availability_status' => ['nullable', 'string'], 
+            'position' => [$isPlayer ? 'required' : 'nullable', 'string', 'max:50'],
+            'height' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:0', 'max:250'],
+            'weight' => [$isPlayer ? 'required' : 'nullable', 'integer', 'min:0', 'max:150'],
+            'dominant_foot' => [$isPlayer ? 'required' : 'nullable', 'string', 'max:20'],
+        ]);
 
-    $user->update([
-        'name' => $validated['name'],
-        'email' => $validated['email'],
-    ]);
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+        ]);
 
-    // Limpieza manual de los valores para evitar el error "invalid"
-    $allowedStatus = ['Available', 'Looking for Club', 'Under Contract', 'Injured'];
-    $status = $request->availability_status;
-    
-    $profileData = [
-        'birth_date' => $validated['birth_date'],
-        'current_club' => $validated['current_club'] ?? '',
-        'location' => $validated['location'] ?? '',
-        'availability_status' => in_array($status, $allowedStatus) ? $status : 'Available',
-        'position' => $validated['position'] ?? ($isPlayer ? 'N/A' : null),
-        'height' => $validated['height'] ?? 0,
-        'weight' => $validated['weight'] ?? 0,
-        'dominant_foot' => $validated['dominant_foot'] ?? ($isPlayer ? 'Right' : 'N/A'),
-    ];
+        $allowedStatus = ['Available', 'Looking for Club', 'Under Contract', 'Injured'];
+        $status = $request->availability_status;
+        
+        $profileData = [
+            'birth_date' => $validated['birth_date'],
+            'current_club' => $validated['current_club'] ?? '',
+            'location' => $validated['location'] ?? '',
+            'availability_status' => in_array($status, $allowedStatus) ? $status : 'Available',
+            'position' => $validated['position'] ?? ($isPlayer ? 'N/A' : 'Staff'),
+            'height' => $validated['height'] ?? 0,
+            'weight' => $validated['weight'] ?? 0,
+            'dominant_foot' => $validated['dominant_foot'] ?? 'Right',
+        ];
 
-    if ($request->hasFile('cover_photo')) {
-        if ($user->profile && $user->profile->cover_photo_path) {
-            Storage::disk('public')->delete($user->profile->cover_photo_path);
+        if ($request->hasFile('cover_photo')) {
+            if ($user->profile && $user->profile->cover_photo_path) {
+                Storage::disk('public')->delete($user->profile->cover_photo_path);
+            }
+            $path = $request->file('cover_photo')->store('covers', 'public');
+            $profileData['cover_photo_path'] = $path;
         }
-        $path = $request->file('cover_photo')->store('covers', 'public');
-        $profileData['cover_photo_path'] = $path;
+
+        Profile::updateOrCreate(['user_id' => $user->id], $profileData);
+
+        if ($user->role === 'admin') {
+            return back()->with('success', 'Admin profile updated successfully.');
+        }
+
+        $routeName = $isPlayer ? 'player.profile.edit' : 'scout.profile.edit';
+        return Redirect::route($routeName)->with('success', 'Profile updated successfully.');
     }
-
-    Profile::updateOrCreate(['user_id' => $user->id], $profileData);
-
-    $routeName = $isPlayer ? 'player.profile.edit' : 'scout.profile.edit';
-    return Redirect::route($routeName)->with('success', 'Profile updated successfully.');
-}
 
     public function updatePassword(Request $request)
     {

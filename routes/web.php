@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\AdminController;
 
 
 
@@ -54,6 +55,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/follow/{user}', [App\Http\Controllers\FollowController::class, 'toggle'])->name('follow.toggle');
     Route::get('/following', [App\Http\Controllers\FollowController::class, 'following'])->name('following.index');
     Route::get('/followers', [App\Http\Controllers\FollowController::class, 'followers'])->name('followers.index');
+
+    //Admin
+    Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    Route::delete('/videos/{id}', [AdminController::class, 'deleteVideo'])->name('admin.videos.delete');
+    });
+
     
 });
 

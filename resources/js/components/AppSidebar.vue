@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { LayoutGrid, User as UserIcon, GalleryVerticalEnd, Video, Mail } from 'lucide-vue-next';
+import { LayoutGrid, User as UserIcon, GalleryVerticalEnd, Video, Mail, ShieldCheck} from 'lucide-vue-next';
 import NavUser from '@/components/NavUser.vue';
 import NavMain from '@/components/NavMain.vue';
 import {
@@ -36,6 +36,7 @@ interface User {
 const page = usePage();
 const user = computed(() => page.props.auth.user as User | null);
 const isPlayer = computed(() => user.value?.role === 'player');
+const isAdmin = computed(() => user.value?.role === 'admin');
 const following = computed(() => (page.props.auth.user as any)?.following || []);
 console.log('Datos de seguidores en Inertia:', following.value);
 
@@ -45,6 +46,12 @@ const mainNavItems = computed(() => [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    ...(isAdmin.value ? [{
+        title: 'Admin Panel',
+        href: route('admin.dashboard'),
+        icon: ShieldCheck,
+        isActive: route().current('admin.dashboard')
+    }] : []),
     ...(user.value ? [{
         title: 'Messages',
         href: route('messages.index'),
@@ -71,7 +78,7 @@ const mainNavItems = computed(() => [
     }] : []),
 
     ...(user.value ? [{
-        title: isPlayer.value ? 'Edit Player Profile' : 'Edit Scout Profile ',
+        title: 'Edit Profile ',
         href: '/player-profile',
         icon: UserIcon,
     }] : []),
