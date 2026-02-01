@@ -1,11 +1,10 @@
-````md
+
 # Sportify (ScoutMarket v1.0)
 
 Sportify is a high-performance vertical social network designed to bridge the gap between football talent (Players) and professional recruiters (Scouts).
 
 It combines the engagement of a TikTok-style video feed with LinkedIn-style professional networking tools.
 
----
 
 ## Key Features
 
@@ -62,7 +61,7 @@ Follow these steps to set up the project locally.
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/your-username/sportify.git
+git clone https://github.com/Gabo8912/Sportify.git
 cd sportify
 ````
 
