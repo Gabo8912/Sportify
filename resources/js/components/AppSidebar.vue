@@ -12,6 +12,9 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarGroup,
+    SidebarGroupLabel,
+
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import AppLogo from './AppLogo.vue';
@@ -23,6 +26,7 @@ interface User {
     role: string;
     name: string;
     email: string;
+    profile_photo_url?: string;
     profile?: {
         position?: string;
         current_club?: string;
@@ -30,12 +34,10 @@ interface User {
 }
 
 const page = usePage();
-
-// CAMBIO 1: Agregamos "as User | null" para que TS sepa que puede estar vacío
 const user = computed(() => page.props.auth.user as User | null);
-
-// CAMBIO 2: Usamos "?." (optional chaining). Si user es null, devuelve false y no explota.
 const isPlayer = computed(() => user.value?.role === 'player');
+const following = computed(() => (page.props.auth.user as any)?.following || []);
+console.log('Datos de seguidores en Inertia:', following.value);
 
 const mainNavItems = computed(() => [
     {
@@ -43,34 +45,46 @@ const mainNavItems = computed(() => [
         href: dashboard(),
         icon: LayoutGrid,
     },
-    // Solo mostramos Mensajes si hay usuario
     ...(user.value ? [{
         title: 'Messages',
         href: route('messages.index'),
         icon: Mail,
     }] : []),
 
-    // Highlights: Solo si existe usuario Y es player
+    ...(user.value ? [
+        {
+            title: 'Following',
+            href: '/following', 
+            icon: UserIcon, 
+        },
+        {
+            title: 'Followers',
+            href: '/followers', 
+            icon: UserIcon,
+        }
+    ] : []),
+
     ...(user.value && isPlayer.value ? [{
         title: 'My Highlights',
         href: route('player.show', user.value.id),
         icon: Video,
     }] : []),
 
-    // Perfil: Solo si existe usuario
     ...(user.value ? [{
         title: isPlayer.value ? 'Edit Player Profile' : 'Edit Scout Profile ',
         href: '/player-profile',
         icon: UserIcon,
     }] : []),
 
-    // El Feed es público, lo dejamos siempre
     {
         title: 'Video Feed',
         href: '/feed',
         icon: GalleryVerticalEnd,
     },
 ]);
+
+
+    
 </script>
 
 <template>
@@ -88,7 +102,7 @@ const mainNavItems = computed(() => [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :items="mainNavItems" :following="following" />
         </SidebarContent>
 
         <SidebarFooter>
@@ -103,3 +117,4 @@ const mainNavItems = computed(() => [
     </Sidebar>
     <slot />
 </template>
+

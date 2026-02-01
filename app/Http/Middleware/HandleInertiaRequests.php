@@ -34,14 +34,28 @@ class HandleInertiaRequests extends Middleware
      * @return array<string, mixed>
      */
     public function share(Request $request): array
-    {
-        return [
-            ...parent::share($request),
-            'name' => config('app.name'),
-            'auth' => [
-                'user' => $request->user(),
-            ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-        ];
-    }
+{
+    return [
+        ...parent::share($request),
+        'name' => config('app.name'),
+        'auth' => [
+            'user' => $request->user() ? [
+                'id' => $request->user()->id,
+                'name' => $request->user()->name,
+                'role' => $request->user()->role,
+                // Cargamos a quién sigue el usuario actual
+                'following' => $request->user()->following()
+                    ->select('users.id', 'users.name')
+                    ->with('profile:user_id,profile_photo_path') 
+                    ->get()
+                    ->map(fn($u) => [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'avatar' => $u->profile_photo_url
+                    ]),
+            ] : null,
+        ],
+    ];
+}
+    
 }

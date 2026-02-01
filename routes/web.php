@@ -47,6 +47,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //Messages
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+
+    //Follow
+    Route::post('/follow/{user}', [App\Http\Controllers\FollowController::class, 'toggle'])->name('follow.toggle');
+    Route::get('/following', [App\Http\Controllers\FollowController::class, 'following'])->name('following.index');
+    Route::get('/followers', [App\Http\Controllers\FollowController::class, 'followers'])->name('followers.index');
     
 });
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -12,9 +12,15 @@ import { type NavItem } from '@/types';
 
 defineProps<{
     items: NavItem[];
+    following?: any[];
 }>();
 
 const { isCurrentUrl } = useCurrentUrl();
+
+const route = (name: string, id?: any) => {
+    // Use Laravel route helper or build the URL manually
+    return `/player/${id}`;
+};
 </script>
 
 <template>
@@ -29,7 +35,7 @@ const { isCurrentUrl } = useCurrentUrl();
                 >
                     <Link :href="item.href">
                         <component :is="item.icon" />
-                        <span>{{ item.title }}</span>
+                        <span class="truncate">{{ item.title }}</span>
                     </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>

@@ -110,29 +110,49 @@ const sendMessage = () => {
                         </div>
 
                         <div v-if="currentUser && currentUser.id !== player.id" class="mt-4">
-        
                             <button 
                                 @click="showMessageInput = !showMessageInput"
-                                class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+                                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition-all active:scale-95 font-bold text-sm"
                             >
-                                ✉️ Contact Player
+                                <span>{{ showMessageInput ? '✕ Close' : '✉️ Contact Player' }}</span>
                             </button>
 
-                            <div v-if="showMessageInput" class="mt-2 bg-gray-100 p-4 rounded border">
-                                <textarea 
-                                    v-model="messageForm.body" 
-                                    class="w-full rounded border-gray-300" 
-                                    placeholder="Hi, I'm a scout from..."
-                                ></textarea>
-                                
-                                <button 
-                                    @click="sendMessage" 
-                                    :disabled="messageForm.processing"
-                                    class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm"
-                                >
-                                    Send
-                                </button>
-                            </div>
+                            <!-- <button 
+                                @click="toggleFollow(player.id)"
+                                class="px-4 py-2 rounded-lg font-bold text-sm border transition-all"
+                                :class="isFollowing(player.id) ? 'bg-transparent border-gray-400 text-gray-500' : 'bg-green-600 text-white'"
+                            >
+                                {{ isFollowing(player.id) ? 'Following' : 'Follow Player' }}
+                            </button> -->
+
+                            <transition
+                                enter-active-class="transition ease-out duration-200"
+                                enter-from-class="opacity-0 translate-y-1"
+                                enter-to-class="opacity-100 translate-y-0"
+                            >
+                                <div v-if="showMessageInput" class="mt-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-inner">
+                                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">
+                                        Send a private message
+                                    </label>
+                                    <textarea 
+                                        v-model="messageForm.body" 
+                                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:ring-blue-500 focus:border-blue-500 shadow-sm" 
+                                        rows="3"
+                                        placeholder="Hi, I'm a scout from... I'm interested in your profile."
+                                    ></textarea>
+                                    
+                                    <div class="flex justify-end mt-3">
+                                        <button 
+                                            @click="sendMessage" 
+                                            :disabled="messageForm.processing || !messageForm.body.trim()"
+                                            class="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors"
+                                        >
+                                            <span v-if="messageForm.processing">Sending...</span>
+                                            <span v-else>Send Message</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </transition>
                         </div>
 
                         <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-b border-gray-200 dark:border-gray-700 py-6">
@@ -153,6 +173,8 @@ const sendMessage = () => {
                                 <span class="block font-bold text-lg text-gray-800 dark:text-white mt-1">{{ getAge(player.profile?.birth_date) }} years</span>
                             </div>
                         </div>
+
+                        
 
                         <div class="mt-10">
                             <div class="flex justify-between items-center mb-6">

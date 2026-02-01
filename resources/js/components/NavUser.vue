@@ -80,30 +80,10 @@ const logout = () => {
                     </DropdownMenuLabel>
                     
                     <DropdownMenuSeparator />
-                    
-                    <DropdownMenuGroup>
-                        <DropdownMenuItem>
-                            <Sparkles class="mr-2 h-4 w-4" />
-                            <span>Upgrade to Pro</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuGroup>
+
                     
                     <DropdownMenuSeparator />
                     
-                    <DropdownMenuGroup>
-                        <DropdownMenuItem>
-                            <BadgeCheck class="mr-2 h-4 w-4" />
-                            <span>Account</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <CreditCard class="mr-2 h-4 w-4" />
-                            <span>Billing</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            <Bell class="mr-2 h-4 w-4" />
-                            <span>Notifications</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuGroup>
                     
                     <DropdownMenuSeparator />
                     
