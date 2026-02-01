@@ -1,11 +1,10 @@
-````md
+
 # Sportify (ScoutMarket v1.0)
 
 Sportify is a high-performance vertical social network designed to bridge the gap between football talent (Players) and professional recruiters (Scouts).
 
 It combines the engagement of a TikTok-style video feed with LinkedIn-style professional networking tools.
 
----
 
 ## Key Features
 
