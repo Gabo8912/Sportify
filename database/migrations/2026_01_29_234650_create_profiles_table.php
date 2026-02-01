@@ -10,10 +10,10 @@ return new class extends Migration
         Schema::create('profiles', function (Blueprint $table) {
             $table->id();
             
-            // CONEXIÓN: Esto conecta el perfil con el usuario (User ID)
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); //To eliminate everthing if user is delated
+            // CONEXIÓN
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             
-            //PHYSIC DATA
+            // PHYSIC DATA
             $table->string('position')->nullable();
             $table->string('dominant_foot')->nullable();
             $table->integer('height')->nullable();
@@ -21,11 +21,15 @@ return new class extends Migration
             $table->string('current_club')->nullable();
             
             // PERSONAL DATA
-            $table->string('birth_date');
+            $table->date('birth_date')->nullable();
             $table->string('location')->nullable();
-            $table->string('profile_photo_path')->nullable();
-            $table->string('cover_photo_path')->nullable();
+            $table->string('profile_photo_path', 2048)->nullable();
+            $table->string('cover_photo_path', 2048)->nullable();
+            
+            // BIOGRAFÍA Y LOGROS
+            $table->text('bio')->nullable();
             $table->text('achievements')->nullable();
+            
             $table->string('availability_status')->default('looking_for_club');
 
             $table->timestamps();
