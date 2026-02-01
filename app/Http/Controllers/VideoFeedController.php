@@ -11,23 +11,24 @@ use Illuminate\Support\Facades\Auth;
 class VideoFeedController extends Controller
 {
     public function index()
-    {
-        $videos = Video::with(['user.profile'])
-            ->latest()
-            ->paginate(10);
+{
+    $videos = Video::with(['user.profile', 'comments.user']) 
+        ->latest()
+        ->paginate(10);
 
-        if (auth::check()) {
-            $userId = auth::id();
-            $videos->getCollection()->transform(function ($video) use ($userId) {
-                $video->is_liked = $video->likes()->where('user_id', $userId)->exists();
-                return $video;
-            });
-        }
-
-        return Inertia::render('Feed/Index', [
-            'videos' => $videos
-        ]);
+    if (auth::check()) {
+        $userId = auth::id();
+        $videos->getCollection()->transform(function ($video) use ($userId) {
+            // Verificamos si el usuario actual le dio like
+            $video->is_liked = $video->likes()->where('user_id', $userId)->exists();
+            return $video;
+        });
     }
+
+    return Inertia::render('Feed/Index', [
+        'videos' => $videos
+    ]);
+}
 
     public function toggleLike($id)
     {

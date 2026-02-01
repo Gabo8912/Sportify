@@ -49,4 +49,19 @@ class VideoController extends Controller
 
         return back()->with('message', 'Video deleted successfully.');
     }
+
+    public function index()
+    {
+        $videos = Video::with([
+            'user.profile',       
+            'comments.user',      
+        ])
+        ->withCount('likes')      
+        ->latest()
+        ->paginate(10);           
+
+        return Inertia::render('Feed/Index', [
+            'videos' => $videos
+        ]);
+    }
 }

@@ -1,6 +1,7 @@
 <script setup>
+import { ref } from 'vue'; // IMPORTANTE: Añadido ref
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
 
 const props = defineProps({
@@ -8,6 +9,31 @@ const props = defineProps({
 });
 
 const page = usePage();
+
+/* COMENTARIOS */
+const activeCommentsVideoId = ref(null);
+
+const commentForm = useForm({
+    body: '',
+});
+
+const openComments = (videoId) => {
+    activeCommentsVideoId.value = videoId;
+};
+
+const closeComments = () => {
+    activeCommentsVideoId.value = null;
+    commentForm.reset();
+};
+
+const submitComment = (videoId) => {
+    commentForm.post(route('comments.store', videoId), {
+        preserveScroll: true,
+        onSuccess: () => {
+            commentForm.reset();
+        },
+    });
+};
 
 /* FOLLOW */
 const isFollowing = (userId) => {
@@ -90,7 +116,6 @@ const registerView = (video) => {
                     />
 
                     <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/40 to-transparent p-4 pb-12 text-white pointer-events-none z-10">
-                        
                         <div class="max-w-[75%] pointer-events-auto">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="h-11 w-11 shrink-0 rounded-full bg-gray-700 border-2 border-white/20 overflow-hidden shadow-lg">
@@ -124,7 +149,6 @@ const registerView = (video) => {
                     </div>
 
                     <div class="absolute bottom-24 right-2 flex flex-col gap-6 items-center text-white z-20 pointer-events-auto">
-                        
                         <div class="flex flex-col items-center gap-1">
                             <button
                                 @click="toggleLike(video)"
@@ -136,6 +160,18 @@ const registerView = (video) => {
                                 </svg>
                             </button>
                             <span class="text-[11px] font-bold shadow-sm">{{ video.likes_count }}</span>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-1">
+                            <button
+                                @click="openComments(video.id)"
+                                class="bg-gray-800/40 backdrop-blur-sm p-3 rounded-full hover:bg-gray-700 transition-all shadow-lg"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                            </button>
+                            <span class="text-[11px] font-bold">{{ video.comments?.length || 0 }}</span>
                         </div>
 
                         <div class="flex flex-col items-center gap-1 text-white/90">
@@ -160,15 +196,70 @@ const registerView = (video) => {
                             <span class="text-[10px] font-black uppercase tracking-tighter">Share</span>
                         </div>
                     </div>
-                </div>
 
-            </div>
+                    <Transition name="slide-up">
+                        <div v-if="activeCommentsVideoId === video.id" 
+                             class="absolute inset-x-0 bottom-0 h-[65%] bg-white dark:bg-gray-900 z-[40] rounded-t-2xl flex flex-col shadow-2xl pointer-events-auto">
+                            
+                            <div class="p-4 border-b dark:border-gray-800 flex justify-between items-center text-black dark:text-white">
+                                <span class="font-bold">{{ video.comments?.length || 0 }} comments</span>
+                                <button @click="closeComments" class="text-2xl p-2">&times;</button>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div v-for="comment in video.comments" :key="comment.id" class="flex gap-3 items-start text-left">
+                                    <img :src="comment.user.profile_photo_url" class="h-8 w-8 rounded-full object-cover shrink-0" />
+                                    <div class="flex flex-col min-w-0">
+                                        <span class="text-[11px] font-bold text-gray-500">@{{ comment.user.name }}</span>
+                                        <p class="text-sm text-gray-800 dark:text-gray-200 break-words">{{ comment.body }}</p>
+                                    </div>
+                                </div>
+                                <div v-if="!video.comments?.length" class="text-center text-gray-400 py-10 text-sm font-medium">
+                                    No comments yet. Start the conversation!
+                                </div>
+                            </div>
+
+                            <div class="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
+                                <div class="flex gap-2">
+                                    <input 
+                                        v-model="commentForm.body" 
+                                        placeholder="Add comment..." 
+                                        class="flex-1 bg-white dark:bg-gray-700 border-none rounded-full px-4 text-sm dark:text-white focus:ring-2 focus:ring-green-500"
+                                        @keyup.enter="submitComment(video.id)"
+                                    />
+                                    <button 
+                                        @click="submitComment(video.id)" 
+                                        :disabled="!commentForm.body || commentForm.processing"
+                                        class="text-green-600 font-bold px-2 disabled:opacity-50"
+                                    >
+                                        Post
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </Transition>
+
+                    <div v-if="activeCommentsVideoId === video.id" 
+                         @click="closeComments" 
+                         class="absolute inset-0 z-[35] bg-black/20 pointer-events-auto">
+                    </div>
+
+                </div> </div>
         </div>
     </AppLayout>
 </template>
 
 <style scoped>
+/* Ocultar scrollbar */
 ::-webkit-scrollbar {
     display: none;
+}
+
+/* Animación de la burbuja TikTok */
+.slide-up-enter-active, .slide-up-leave-active {
+    transition: transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.slide-up-enter-from, .slide-up-leave-to {
+    transform: translateY(100%);
 }
 </style>

@@ -44,7 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/feed', [App\Http\Controllers\VideoFeedController::class, 'index'])->name('feed');
     Route::post('/videos/{id}/like', [App\Http\Controllers\VideoFeedController::class, 'toggleLike'])->name('videos.like');
     Route::post('/videos/{id}/view', [App\Http\Controllers\VideoFeedController::class, 'incrementView'])->name('videos.view');
-    Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('auth')->name('comments.store');
 
     //Messages
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
