@@ -96,17 +96,14 @@ const form = useForm({
 });
 
 const submitProfile = () => {
-    // Usamos POST directamente si hay archivos de por medio
-    // Laravel leerá el campo _method: 'PATCH' dentro del formulario
     form.post(route('player.profile.update'), {
         preserveScroll: true,
-        forceFormData: true, // Esto asegura que se envíe como multipart/form-data
+        forceFormData: true,
         onSuccess: () => {
             coverPreview.value = null;
-            // Opcional: mostrar un mensaje de éxito
         },
         onError: (errors) => {
-            console.log(errors); // Mira la consola para ver qué rebotó Laravel
+            console.log(errors); 
         }
     });
 };

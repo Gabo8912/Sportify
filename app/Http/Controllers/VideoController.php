@@ -6,42 +6,51 @@ use Illuminate\Http\Request;
 use App\Models\Video;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
-
+use App\Services\VideoUrlParser;
 
 class VideoController extends Controller
 {
-    //Function to show view to upload video
     public function create()
     {
         return Inertia::render('Videos/Create');
     }
-
-    //Safe video to DB Máx 100MB
+    
     public function store(Request $request)
     {
+        // Validación
         $request->validate([
             'title' => 'required|string|max:100',
-            'video_file' => 'required|file|mimes:mp4,mov,quicktime|max:102400',
+            'video_link' => 'required|url',
         ]);
 
-        $video_url = $request->file('video_file')->store('videos', 'public');
+        // Usamos el Parser (que te doy más abajo)
+        $videoData = VideoUrlParser::parse($request->video_link);
 
+        if (!$videoData) {
+            return back()->withErrors(['video_link' => 'Plataforma no válida. Usa YouTube, Shorts o TikTok.']);
+        }
+
+        // Crear el video
+        // NOTA: Asegúrate de actualizar el modelo Video.php (Paso 3)
         $request->user()->videos()->create([
             'title' => $request->title,
-            'video_url' => $video_url,
+            'video_url' => $request->video_link, 
+            'platform' => $videoData['platform'],      // Guarda 'youtube'
+            'external_video_id' => $videoData['id'],   // Guarda el ID (ej: YGJPYh713d0)
             'views_count' => 0,
-            'likes_count' => 0,
+            'likes_count' => 0
         ]);
 
-        return redirect()->route('player.show', $request->user()->id)
-            ->with('message', 'Video uploaded successfully! 🎥');
+        // Volvemos atrás (así evitamos el error de ruta no encontrada)
+        return redirect()->back()->with('success', 'Highlight published correctly.');
     }
 
     public function destroy(Request $request, $id)
     {
-        $video =  $request-> user()->videos()->findOrFail($id);
+        $video = $request->user()->videos()->findOrFail($id);
 
-        if ($video->video_url) {
+        // SOLO borramos el archivo si es 'local'. Si es YouTube, no tocamos el storage.
+        if ($video->platform === 'local' && $video->video_url) {
             Storage::disk('public')->delete($video->video_url);
         }
 
@@ -52,14 +61,21 @@ class VideoController extends Controller
 
     public function index()
     {
+        // Usamos cursorPaginate para el scroll infinito estilo TikTok
         $videos = Video::with([
-            'user.profile',       
-            'comments.user',      
+            'user.profile', // Asegúrate de que esta relación exista en tu User.php
+            'comments.user',
         ])
-        ->withCount('likes')      
+        ->withCount('likes')
         ->latest()
-        ->paginate(10);           
+        ->cursorPaginate(5); // Carga de 5 en 5 para mayor velocidad
 
+        // Si el Frontend (Vue) pide JSON (cuando bajas haciendo scroll), devolvemos solo datos
+        if (request()->wantsJson()) {
+            return $videos;
+        }
+
+        // Si es la primera carga, devolvemos la página completa
         return Inertia::render('Feed/Index', [
             'videos' => $videos
         ]);

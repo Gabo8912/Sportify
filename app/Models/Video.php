@@ -13,9 +13,10 @@ class Video extends Model
     protected $fillable = [
         'user_id',
         'title',
-        'description',
         'video_url',
-        'thumbnail_url',
+        'description', 
+        'platform',          // <--- ESTE ES OBLIGATORIO
+        'external_video_id', // <--- ESTE ES OBLIGATORIO
         'views_count',
         'likes_count',
     ];

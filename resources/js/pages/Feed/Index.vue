@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'; // IMPORTANTE: Añadido ref
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -10,7 +10,18 @@ const props = defineProps({
 
 const page = usePage();
 
-/* COMENTARIOS */
+const isMuted = ref(true);//muted audio
+
+const toggleMute = () => {
+    isMuted.value = !isMuted.value;
+};
+
+const getYoutubeEmbed = (videoId) => {
+    const muteStatus = isMuted.value ? '1' : '0';
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=${muteStatus}&controls=0&rel=0&loop=1&playlist=${videoId}&playsinline=1`;
+};
+
+
 const activeCommentsVideoId = ref(null);
 
 const commentForm = useForm({
@@ -80,15 +91,49 @@ const shareVideo = (video) => {
 };
 
 /* VIEWS */
-const viewedVideos = new Set();
-
 const registerView = (video) => {
-    if (viewedVideos.has(video.id)) return;
-    viewedVideos.add(video.id);
+    if (video.has_viewed) return;
+    
+    video.has_viewed = true;
+
     axios.post(route('videos.view', video.id))
-        .then(() => video.views_count++)
+        .then(() => {
+            video.views_count++;
+        })
         .catch(() => {});
 };
+const videoRefs = ref([]);
+const setVideoRef = (el, video) => {
+    if (el) {
+        el.__videoData = video; 
+        videoRefs.value.push(el);
+    }
+};
+
+let observer;
+
+onMounted(() => {
+    observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                const video = entry.target.__videoData;
+                if (video) registerView(video);
+            }
+        });
+    }, { threshold: 0.6 }); 
+    videoRefs.value.forEach(el => observer.observe(el));
+});
+
+onBeforeUnmount(() => {
+    if (observer) observer.disconnect();
+});
+
+//----
+
+
+
+
+
 </script>
 
 <template>
@@ -102,20 +147,40 @@ const registerView = (video) => {
                 <div
                     v-for="video in videos.data"
                     :key="video.id"
+                    :ref="(el) => setVideoRef(el, video)" 
                     class="relative w-full h-full snap-start flex items-center justify-center bg-gray-900 border-b border-gray-800"
                 >
+                    <div @click="toggleMute" class="absolute inset-0 z-10 w-full h-full cursor-pointer flex items-center justify-center">
+                        <div v-if="isMuted" class="bg-black/40 p-4 rounded-full backdrop-blur-sm animate-pulse pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div v-if="video.platform === 'youtube'" class="w-full h-full bg-black">
+                        <iframe 
+                            class="w-full h-full object-cover pointer-events-none"
+                            :src="getYoutubeEmbed(video.external_video_id)" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen
+                        ></iframe>
+                    </div>
+
                     <video
-                        class="w-full h-full object-cover cursor-pointer"
-                        :src="'/storage/' + video.video_url"
+                        v-else
+                        class="w-full h-full object-cover"
+                        :src="video.video_url" 
                         autoplay
-                        muted
+                        :muted="isMuted"
                         loop
                         playsinline
-                        @click="$event.target.paused ? $event.target.play() : $event.target.pause()"
                         @play="registerView(video)"
                     />
-
-                    <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/40 to-transparent p-4 pb-12 text-white pointer-events-none z-10">
+                    
+                    <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/40 to-transparent p-4 pb-12 text-white pointer-events-none z-20">
                         <div class="max-w-[75%] pointer-events-auto">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="h-11 w-11 shrink-0 rounded-full bg-gray-700 border-2 border-white/20 overflow-hidden shadow-lg">
@@ -148,7 +213,7 @@ const registerView = (video) => {
                         </div>
                     </div>
 
-                    <div class="absolute bottom-24 right-2 flex flex-col gap-6 items-center text-white z-20 pointer-events-auto">
+                    <div class="absolute bottom-24 right-2 flex flex-col gap-6 items-center text-white z-30 pointer-events-auto">
                         <div class="flex flex-col items-center gap-1">
                             <button
                                 @click="toggleLike(video)"
@@ -240,11 +305,12 @@ const registerView = (video) => {
                     </Transition>
 
                     <div v-if="activeCommentsVideoId === video.id" 
-                         @click="closeComments" 
-                         class="absolute inset-0 z-[35] bg-black/20 pointer-events-auto">
+                        @click="closeComments" 
+                        class="absolute inset-0 z-[35] bg-black/20 pointer-events-auto">
                     </div>
 
-                </div> </div>
+                </div>
+            </div>
         </div>
     </AppLayout>
 </template>
