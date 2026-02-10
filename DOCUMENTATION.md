@@ -1,4 +1,13 @@
+<div align="center">
 
+# ⚽ Sportify (ScoutMarket v1.0)
+
+[![Read Documentation](https://img.shields.io/badge/📘-Read%20Full%20Documentation-007bff?style=for-the-badge)](./DOCUMENTATION.md)
+[![Project Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](./README.md)
+
+</div>
+
+---
 # Sportify: Comprehensive Technical Documentation (v1.0)
 
 **Version:** 1.0.0 (MVP)  
