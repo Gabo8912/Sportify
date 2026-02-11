@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -10,130 +10,207 @@ const props = defineProps({
 
 const page = usePage();
 
-const isMuted = ref(true);//muted audio
+
+// Infinite Scroll Data
+const allVideos = ref([...props.videos.data]); 
+const nextCursor = ref(props.videos.next_cursor);
+const isLoadingMore = ref(false);
+const loadTriggerRef = ref(null); 
+
+const visibleIndex = ref(0); 
+
+const shouldLoad = (index) => {
+    return Math.abs(index - visibleIndex.value) <= 1;
+};
+
+watch(visibleIndex, () => {
+    syncAudioState();
+});
+
+
+const mediaRefs = ref({}); 
+
+const setMediaRef = (el, videoId) => {
+    if (el) {
+        mediaRefs.value[videoId] = el;
+        el.__videoData = allVideos.value.find(v => v.id === videoId);
+    }
+};
+
+// Audio
+const isMuted = ref(true);
+
+const getYoutubeEmbed = (videoId) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&mute=1&controls=0&rel=0&loop=1&playlist=${videoId}&playsinline=1&origin=${origin}`;
+};
 
 const toggleMute = () => {
     isMuted.value = !isMuted.value;
+    syncAudioState(); 
 };
 
-const getYoutubeEmbed = (videoId) => {
-    const muteStatus = isMuted.value ? '1' : '0';
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=${muteStatus}&controls=0&rel=0&loop=1&playlist=${videoId}&playsinline=1`;
+const syncAudioState = () => {
+    allVideos.value.forEach((video, index) => {
+        if (!shouldLoad(index)) return;
+
+        const el = mediaRefs.value[video.id];
+        if (!el) return;
+
+        const shouldBeMuted = isMuted.value || index !== visibleIndex.value;
+
+        if (video.platform === 'youtube') {
+            const command = shouldBeMuted ? 'mute' : 'unMute';
+            if (el.contentWindow) {
+                el.contentWindow.postMessage(JSON.stringify({
+                    event: 'command',
+                    func: command,
+                    args: []
+                }), '*');
+            }
+        } else {
+            el.muted = shouldBeMuted;
+            
+            if (shouldBeMuted) {
+                el.pause();
+            } else {
+                el.play().catch(() => {});
+            }
+        }
+    });
 };
 
+// Infinite Scroll
+const loadMoreVideos = async () => {
+    if (isLoadingMore.value || !nextCursor.value) return;
 
+    isLoadingMore.value = true;
+    try {
+        const response = await axios.get(props.videos.path + '?cursor=' + nextCursor.value);
+        allVideos.value.push(...response.data.data);
+        nextCursor.value = response.data.next_cursor;
+        
+        nextTick(() => {
+            syncAudioState();
+        });
+
+    } catch (error) {
+        console.error("Error cargando más videos:", error);
+    } finally {
+        isLoadingMore.value = false;
+    }
+};
+
+// --- Comments ---
 const activeCommentsVideoId = ref(null);
+const commentForm = useForm({ body: '' });
 
-const commentForm = useForm({
-    body: '',
-});
-
-const openComments = (videoId) => {
-    activeCommentsVideoId.value = videoId;
-};
-
-const closeComments = () => {
-    activeCommentsVideoId.value = null;
-    commentForm.reset();
-};
+const openComments = (videoId) => { activeCommentsVideoId.value = videoId; };
+const closeComments = () => { activeCommentsVideoId.value = null; commentForm.reset(); };
 
 const submitComment = (videoId) => {
+    const tempBody = commentForm.body; 
+
     commentForm.post(route('comments.store', videoId), {
         preserveScroll: true,
         onSuccess: () => {
+            const videoIndex = allVideos.value.findIndex(v => v.id === videoId);
+
+            if (videoIndex !== -1) {
+                const currentUser = page.props.auth.user;
+
+                const newComment = {
+                    id: Date.now(),
+                    body: tempBody,
+                    user: {
+                        id: currentUser.id,
+                        name: currentUser.name,
+                        profile_photo_url: currentUser.profile_photo_url
+                    },
+                    created_at: new Date().toISOString()
+                };
+
+                if (!allVideos.value[videoIndex].comments) {
+                    allVideos.value[videoIndex].comments = [];
+                }
+                allVideos.value[videoIndex].comments.push(newComment);
+            }
+
             commentForm.reset();
         },
     });
 };
 
 /* FOLLOW */
-const isFollowing = (userId) => {
-    return page.props.auth.user?.following?.some(u => u.id === userId);
-};
-
+const isFollowing = (userId) => { return page.props.auth.user?.following?.some(u => u.id === userId); };
 const toggleFollow = (userId) => {
-    router.post(route('follow.toggle', userId), {}, {
-        preserveScroll: true,
-        preserveState: true
-    });
+    router.post(route('follow.toggle', userId), {}, { preserveScroll: true, preserveState: true });
 };
 
 /* LIKE */
 const toggleLike = (video) => {
-    if (video.is_liked) {
-        video.likes_count--;
-        video.is_liked = false;
-    } else {
-        video.likes_count++;
-        video.is_liked = true;
-    }
-
-    router.post(route('videos.like', video.id), {}, {
-        preserveScroll: true,
-        preserveState: true
-    });
+    if (video.is_liked) { video.likes_count--; video.is_liked = false; } 
+    else { video.likes_count++; video.is_liked = true; }
+    router.post(route('videos.like', video.id), {}, { preserveScroll: true, preserveState: true });
 };
 
 /* SHARE */
 const shareVideo = (video) => {
     const url = window.location.origin + '/player/' + video.user.id;
-
     if (navigator.share) {
-        navigator.share({
-            title: `Check out ${video.user.name} on ScoutMarket!`,
-            text: video.title,
-            url,
-        }).catch(() => {});
+        navigator.share({ title: `Check out ${video.user.name} on ScoutMarket!`, text: video.title, url }).catch(() => {});
     } else {
         navigator.clipboard.writeText(url);
         alert('Link copied to clipboard!');
     }
 };
 
-/* VIEWS */
+/* VIEWS & OBSERVERS */
 const registerView = (video) => {
     if (video.has_viewed) return;
-    
     video.has_viewed = true;
-
-    axios.post(route('videos.view', video.id))
-        .then(() => {
-            video.views_count++;
-        })
-        .catch(() => {});
+    axios.post(route('videos.view', video.id)).then(() => { video.views_count++; }).catch(() => {});
 };
-const videoRefs = ref([]);
-const setVideoRef = (el, video) => {
-    if (el) {
-        el.__videoData = video; 
-        videoRefs.value.push(el);
+
+let viewObserver;
+let infiniteObserver;
+
+const onIframeLoad = (videoId) => {
+    if (!isMuted.value) {
+        const el = mediaRefs.value[videoId];
+        if (el && el.contentWindow) {
+             el.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+        }
     }
 };
 
-let observer;
-
 onMounted(() => {
-    observer = new IntersectionObserver((entries) => {
+    viewObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             if (entry.isIntersecting) {
                 const video = entry.target.__videoData;
                 if (video) registerView(video);
+
+
+                const index = Number(entry.target.dataset.index);
+                if (!isNaN(index)) {
+                    visibleIndex.value = index;
+                }
             }
         });
-    }, { threshold: 0.6 }); 
-    videoRefs.value.forEach(el => observer.observe(el));
+    }, { threshold: 0.5 });
+
+    infiniteObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) loadMoreVideos();
+    }, { rootMargin: '400px' });
+
+    if (loadTriggerRef.value) infiniteObserver.observe(loadTriggerRef.value);
 });
 
 onBeforeUnmount(() => {
-    if (observer) observer.disconnect();
+    if (viewObserver) viewObserver.disconnect();
+    if (infiniteObserver) infiniteObserver.disconnect();
 });
-
-//----
-
-
-
-
-
 </script>
 
 <template>
@@ -145,9 +222,9 @@ onBeforeUnmount(() => {
             <div class="w-full h-full max-w-md bg-black relative shadow-2xl overflow-y-scroll snap-y snap-mandatory border-x border-white/10">
 
                 <div
-                    v-for="video in videos.data"
+                    v-for="(video, index) in allVideos"
                     :key="video.id"
-                    :ref="(el) => setVideoRef(el, video)" 
+                    :data-index="index" 
                     class="relative w-full h-full snap-start flex items-center justify-center bg-gray-900 border-b border-gray-800"
                 >
                     <div @click="toggleMute" class="absolute inset-0 z-10 w-full h-full cursor-pointer flex items-center justify-center">
@@ -161,22 +238,29 @@ onBeforeUnmount(() => {
 
                     <div v-if="video.platform === 'youtube'" class="w-full h-full bg-black">
                         <iframe 
+                            v-if="shouldLoad(index)"
+                            :ref="(el) => { setMediaRef(el, video.id); if(el && viewObserver) viewObserver.observe(el); }"
+                            @load="onIframeLoad(video.id)"
                             class="w-full h-full object-cover pointer-events-none"
                             :src="getYoutubeEmbed(video.external_video_id)" 
                             frameborder="0" 
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowfullscreen
+                            :data-index="index"
                         ></iframe>
+                        <img v-else :src="`https://img.youtube.com/vi/${video.external_video_id}/hqdefault.jpg`" class="w-full h-full object-cover opacity-60" />
                     </div>
 
                     <video
                         v-else
+                        :ref="(el) => { setMediaRef(el, video.id); if(el && viewObserver) viewObserver.observe(el); }"
                         class="w-full h-full object-cover"
-                        :src="video.video_url" 
+                        :src="shouldLoad(index) ? video.video_url : ''" 
                         autoplay
-                        :muted="isMuted"
                         loop
                         playsinline
+                        :muted="isMuted || index !== visibleIndex"  :poster="video.thumbnail_url"
+                        :data-index="index"
                         @play="registerView(video)"
                     />
                     
@@ -305,23 +389,26 @@ onBeforeUnmount(() => {
                     </Transition>
 
                     <div v-if="activeCommentsVideoId === video.id" 
-                        @click="closeComments" 
-                        class="absolute inset-0 z-[35] bg-black/20 pointer-events-auto">
+                         @click="closeComments" 
+                         class="absolute inset-0 z-[35] bg-black/20 pointer-events-auto">
                     </div>
 
                 </div>
+
+                <div ref="loadTriggerRef" class="w-full h-20 snap-start flex items-center justify-center">
+                    <span v-if="isLoadingMore" class="text-white/50 text-xs animate-pulse">Loading talent...</span>
+                </div>
+
             </div>
         </div>
     </AppLayout>
 </template>
 
 <style scoped>
-/* Ocultar scrollbar */
 ::-webkit-scrollbar {
     display: none;
 }
 
-/* Animación de la burbuja TikTok */
 .slide-up-enter-active, .slide-up-leave-active {
     transition: transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
 }
