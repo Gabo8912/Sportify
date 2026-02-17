@@ -12,7 +12,6 @@
 
 **Version:** 1.0.0 (MVP)  
 **Status:** Production Ready  
-**Maintainer:** [Your Name / GitHub Profile]
 
 
 ## Table of Contents
