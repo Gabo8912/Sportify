@@ -9,9 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('videos', function (Blueprint $table) {
-            $table->string('platform')->default('local')->after('video_url');
+            if (!Schema::hasColumn('videos', 'platform')) {
+                $table->string('platform')->default('local')->after('video_url');
+            }
             
-            $table->string('external_video_id')->nullable()->after('platform');
+            if (!Schema::hasColumn('videos', 'external_video_id')) {
+                $table->string('external_video_id')->nullable()->after('platform');
+            }
         });
     }
 

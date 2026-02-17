@@ -114,4 +114,16 @@ public function scopeFilter($query, array $filters)
     public function receivedMessages() {
         return $this->hasMany(Message::class, 'receiver_id');
     }
+
+    public function saves(){
+        return $this->hasMany(Message::class);
+    }
+
+    public function savedVideos() {
+        return $this->morphedByMany(Video::class, 'saveable', 'saves')
+                ->withTimestamps()
+                ->withPivot(['created_at']);
+
+    }
+    
 }

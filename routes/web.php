@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/player/{id}/follow', [App\Http\Controllers\PlayerProfileController::class, 'toggleFollow'])->name('player.follow');
     Route::put('/player-profile/password', [PlayerProfileController::class, 'updatePassword'])->name('player.password.update');
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+    
 
     //Videos
     Route::get('/videos/upload', [VideoController::class, 'create'])->name('videos.create');
@@ -46,6 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/videos/{id}/like', [App\Http\Controllers\VideoFeedController::class, 'toggleLike'])->name('videos.like');
     Route::post('/videos/{id}/view', [App\Http\Controllers\VideoFeedController::class, 'incrementView'])->name('videos.view');
     Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('auth')->name('comments.store');
+    Route::post('/videos/{video}/save', [VideoController::class, 'toggleSave'])->name('videos.save');
 
     //Messages
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
@@ -63,6 +65,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
     Route::delete('/videos/{id}', [AdminController::class, 'deleteVideo'])->name('admin.videos.delete');
     });
+
+
 
     
 });

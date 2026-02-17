@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Video;
+use App\Models\User;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Services\VideoUrlParser;
 
@@ -17,39 +19,39 @@ class VideoController extends Controller
     
     public function store(Request $request)
     {
-        // Validación
         $request->validate([
             'title' => 'required|string|max:100',
             'video_link' => 'required|url',
         ]);
 
-        // Usamos el Parser (que te doy más abajo)
         $videoData = VideoUrlParser::parse($request->video_link);
 
         if (!$videoData) {
             return back()->withErrors(['video_link' => 'Plataforma no válida. Usa YouTube, Shorts o TikTok.']);
         }
 
-        // Crear el video
-        // NOTA: Asegúrate de actualizar el modelo Video.php (Paso 3)
-        $request->user()->videos()->create([
+        /** @var User $user */
+        $user = $request->user();
+
+        $user->videos()->create([
             'title' => $request->title,
-            'video_url' => $request->video_link, 
-            'platform' => $videoData['platform'],      // Guarda 'youtube'
-            'external_video_id' => $videoData['id'],   // Guarda el ID (ej: YGJPYh713d0)
+            'video_url' => $request->video_link,
+            'platform' => $videoData['platform'],
+            'external_video_id' => $videoData['id'],
             'views_count' => 0,
             'likes_count' => 0
         ]);
 
-        // Volvemos atrás (así evitamos el error de ruta no encontrada)
         return redirect()->back()->with('success', 'Highlight published correctly.');
     }
 
     public function destroy(Request $request, $id)
     {
-        $video = $request->user()->videos()->findOrFail($id);
+        /** @var User $user */
+        $user = $request->user();
+        
+        $video = $user->videos()->findOrFail($id);
 
-        // SOLO borramos el archivo si es 'local'. Si es YouTube, no tocamos el storage.
         if ($video->platform === 'local' && $video->video_url) {
             Storage::disk('public')->delete($video->video_url);
         }
@@ -61,23 +63,63 @@ class VideoController extends Controller
 
     public function index()
     {
-        // Usamos cursorPaginate para el scroll infinito estilo TikTok
+        /** @var User|null $user */
+        $user = Auth::user();
+
         $videos = Video::with([
-            'user.profile', // Asegúrate de que esta relación exista en tu User.php
+            'user.profile', 
             'comments.user',
         ])
-        ->withCount('likes')
+        ->withCount(['likes', 'saves'])
         ->latest()
-        ->cursorPaginate(5); // Carga de 5 en 5 para mayor velocidad
+        ->cursorPaginate(5);
 
-        // Si el Frontend (Vue) pide JSON (cuando bajas haciendo scroll), devolvemos solo datos
+        
+        $videos->through(function ($video) use ($user) {
+            if ($user) {
+                $video->is_liked = $video->likes()
+                    ->where('user_id', $user->id)
+                    ->exists();
+
+                $video->is_saved = $video->saves()
+                    ->where('user_id', $user->id)
+                    ->exists();
+            } else {
+                $video->is_liked = false;
+                $video->is_saved = false;
+            }
+            
+            return $video;
+        });
+
         if (request()->wantsJson()) {
             return $videos;
         }
 
-        // Si es la primera carga, devolvemos la página completa
         return Inertia::render('Feed/Index', [
             'videos' => $videos
         ]);
+    }
+
+    // Saves
+
+    public function toggleSave(Request $request, $id)
+    {
+        $video = Video::findOrFail($id);
+        $user = Auth::user();
+
+        $existingSave = $video->saves()->where('user_id', $user->id)->first();
+
+        if ($existingSave) {
+            $existingSave->delete();
+            $msg = 'Video removed from saved.';
+        } else {
+            $video->saves()->create([
+                'user_id' => $user->id
+            ]);
+            $msg = 'Video saved.';
+        }
+        
+        return back()->with('message', $msg);
     }
 }

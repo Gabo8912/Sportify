@@ -5,15 +5,18 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
+{   
+    public function up()
 {
-    public function up(): void
-    {
     Schema::table('videos', function (Blueprint $table) {
-        $table->dropColumn('video_path');
-
-        $table->string('video_url'); 
-        $table->string('platform'); 
-        $table->string('external_video_id'); 
+        if (Schema::hasColumn('videos', 'video_path')) { // Verifica antes de borrar
+            $table->dropColumn('video_path');
+        }
+        
+        // Aquí añade tus nuevas columnas si no existen
+        if (!Schema::hasColumn('videos', 'external_url')) {
+            $table->string('external_url')->nullable();
+        }
     });
-    }
+}
 };

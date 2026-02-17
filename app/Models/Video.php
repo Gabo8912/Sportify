@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\Save;
 
 class Video extends Model
 {
@@ -14,9 +15,9 @@ class Video extends Model
         'user_id',
         'title',
         'video_url',
-        'description', 
-        'platform',          // <--- ESTE ES OBLIGATORIO
-        'external_video_id', // <--- ESTE ES OBLIGATORIO
+        'description',
+        'platform',
+        'external_video_id',
         'views_count',
         'likes_count',
     ];
@@ -31,6 +32,16 @@ class Video extends Model
     }
     public function comments() {
     return $this->hasMany(Comment::class)->latest();
-}
+    }
+
+    public function saves():MorphMany {
+        return $this->morphMany(Save::class,'saveable');
+    }
+
+    public function isSavedBy(?User $user): bool {
+        if(! $user) return false;
+        return $user->saves()-> where('user_id', $user->id)->exists();
+    }
+
 
 }

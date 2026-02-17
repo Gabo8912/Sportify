@@ -211,6 +211,33 @@ onBeforeUnmount(() => {
     if (viewObserver) viewObserver.disconnect();
     if (infiniteObserver) infiniteObserver.disconnect();
 });
+
+
+//SAVE
+const toggleSave = (video) => {
+    if (video.is_saved) {
+        video.saves_count--;
+        video.is_saved = false;
+    } else {
+        video.saves_count++;
+        video.is_saved = true;
+    }
+
+    router.post(route('videos.save', video.id), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onError: () => {
+            if (video.is_saved) {
+                video.saves_count--;
+                video.is_saved = false;
+            } else {
+                video.saves_count++;
+                video.is_saved = true;
+            }
+        }
+    });
+};
+
 </script>
 
 <template>
@@ -333,6 +360,7 @@ onBeforeUnmount(() => {
                             <span class="text-[11px] font-bold">{{ video.views_count }}</span>
                         </div>
 
+
                         <div class="flex flex-col items-center gap-1">
                             <button
                                 @click="shareVideo(video)"
@@ -344,11 +372,24 @@ onBeforeUnmount(() => {
                             </button>
                             <span class="text-[10px] font-black uppercase tracking-tighter">Share</span>
                         </div>
-                    </div>
 
+                        <div class="flex flex-col items-center gap-1">
+                        <button
+                            @click="toggleSave(video)"
+                            class="p-3 rounded-full transition-all active:scale-75 shadow-lg bg-gray-800/40 backdrop-blur-sm"
+                            :class="video.is_saved ? 'text-yellow-400' : 'text-white hover:text-yellow-200'"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" :class="video.is_saved ? 'fill-current' : 'fill-none stroke-current stroke-2'" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                            </svg>
+                        </button>
+                        <span class="text-[11px] font-bold shadow-sm">{{ video.saves_count || 0 }}</span>
+                    </div>
+                    
+                    </div>
                     <Transition name="slide-up">
                         <div v-if="activeCommentsVideoId === video.id" 
-                             class="absolute inset-x-0 bottom-0 h-[65%] bg-white dark:bg-gray-900 z-[40] rounded-t-2xl flex flex-col shadow-2xl pointer-events-auto">
+                            class="absolute inset-x-0 bottom-0 h-[65%] bg-white dark:bg-gray-900 z-[40] rounded-t-2xl flex flex-col shadow-2xl pointer-events-auto">
                             
                             <div class="p-4 border-b dark:border-gray-800 flex justify-between items-center text-black dark:text-white">
                                 <span class="font-bold">{{ video.comments?.length || 0 }} comments</span>
@@ -387,10 +428,11 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
                     </Transition>
+                    
 
                     <div v-if="activeCommentsVideoId === video.id" 
-                         @click="closeComments" 
-                         class="absolute inset-0 z-[35] bg-black/20 pointer-events-auto">
+                        @click="closeComments" 
+                        class="absolute inset-0 z-[35] bg-black/20 pointer-events-auto">
                     </div>
 
                 </div>
